@@ -1,17 +1,17 @@
 """
-📝 تحميل النصوص من ملفات DOCX
+🗄️ تحميل وإدارة قاعدة بيانات Chroma
 
-يقرأ محتوى ملفات Word (.docx) ويستخرج النص منها
+يقوم بإدارة الاتصال بقاعدة بيانات Chroma والبحث فيها
 """
 
-import os
-import re
+import chromadb
+from chromadb.utils import embedding_functions
+from typing import List, Dict, Any, Optional, Union
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Tuple
-import zipfile
-import xml.etree.ElementTree as ET
-from datetime import datetime
+import uuid
+import numpy as np
 
+from core.config import settings
 from utils.logger import logger
 
 
@@ -24,7 +24,8 @@ def clean_metadata_for_chroma(metadata: Dict[str, Any]) -> Dict[str, Any]:
     تنظيف البيانات الوصفية لتكون متوافقة مع Chroma
     
     Chroma يقبل فقط:
-    - str, int, float, bool, None
+    - str, int, float, bool
+    - لا يقبل: None, list, dict, set, tuple
     
     Args:
         metadata: البيانات الوصفية
@@ -35,423 +36,562 @@ def clean_metadata_for_chroma(metadata: Dict[str, Any]) -> Dict[str, Any]:
     cleaned = {}
     
     for key, value in metadata.items():
-        # تخطي القيم الفارغة
+        # تخطي المفاتيح الفارغة
+        if not key:
+            continue
+        
+        # ============================================================
+        # 1. معالجة القيم الفارغة (None)
+        # ============================================================
         if value is None:
-            cleaned[key] = None
-        elif isinstance(value, (str, int, float, bool)):
+            cleaned[key] = "unknown"
+            continue
+        
+        # ============================================================
+        # 2. معالجة الأنواع الأساسية المدعومة
+        # ============================================================
+        if isinstance(value, (str, int, float, bool)):
             cleaned[key] = value
-        elif isinstance(value, (list, tuple, set)):
-            # تحويل المجموعات إلى سلسلة
+            continue
+        
+        # ============================================================
+        # 3. معالجة القوائم والمجموعات
+        # ============================================================
+        if isinstance(value, (list, tuple, set)):
+            # تحويل إلى نص مفصول بفواصل
             try:
-                cleaned[key] = str(list(value))
+                str_values = [str(v) for v in value if v is not None]
+                if str_values:
+                    cleaned[key] = ", ".join(str_values)
+                else:
+                    cleaned[key] = "empty_list"
             except:
                 cleaned[key] = str(value)
-        elif isinstance(value, dict):
-            # تحويل القواميس إلى سلسلة
+            continue
+        
+        # ============================================================
+        # 4. معالجة القواميس (dict)
+        # ============================================================
+        if isinstance(value, dict):
+            # تحويل القاموس إلى نص key=value, key2=value2
             try:
-                cleaned[key] = str(value)
+                items = []
+                for k, v in value.items():
+                    if v is not None:
+                        items.append(f"{k}={v}")
+                if items:
+                    cleaned[key] = "; ".join(items)
+                else:
+                    cleaned[key] = "empty_dict"
             except:
                 cleaned[key] = str(value)
-        elif isinstance(value, datetime):
-            # تحويل التواريخ إلى سلسلة ISO
+            continue
+        
+        # ============================================================
+        # 5. معالجة numpy arrays
+        # ============================================================
+        if isinstance(value, np.ndarray):
             try:
-                cleaned[key] = value.isoformat()
+                # تحويل إلى قائمة ثم إلى نص
+                arr_list = value.tolist()
+                if arr_list:
+                    str_values = [str(v) for v in arr_list if v is not None]
+                    cleaned[key] = ", ".join(str_values) if str_values else "empty_array"
+                else:
+                    cleaned[key] = "empty_array"
             except:
                 cleaned[key] = str(value)
-        else:
-            # أي نوع آخر يتم تحويله إلى سلسلة
-            try:
-                cleaned[key] = str(value)
-            except:
-                cleaned[key] = None
+            continue
+        
+        # ============================================================
+        # 6. أي نوع آخر - تحويل إلى نص
+        # ============================================================
+        try:
+            cleaned[key] = str(value)
+        except:
+            cleaned[key] = "unknown_type"
     
     return cleaned
 
 
-class DocxLoader:
+class ChromaLoader:
     """
-    تحميل النصوص من ملفات DOCX
-
+    إدارة قاعدة بيانات Chroma
+    
     يدعم:
-    - استخراج النص من ملفات .docx
-    - استخراج البيانات الوصفية
-    - تنظيف النص المستخرج
-    - قراءة الملفات في مجلدات
+    - تخزين دائم (Persistent) على القرص
+    - البحث الدلالي باستخدام المتجهات
+    - تصفية البيانات الوصفية
+    - إضافة وحذف المستندات
+    - استرجاع جميع المستندات
     """
 
-    NAMESPACES = {
-        'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main',
-        'r': 'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
-        'dc': 'http://purl.org/dc/elements/1.1/',
-        'cp': 'http://schemas.openxmlformats.org/package/2006/metadata/core-properties',
-        'dcterms': 'http://purl.org/dc/terms/'
-    }
-
-    def __init__(self, clean_text: bool = True, remove_extra_spaces: bool = True):
-        self.clean_text = clean_text
-        self.remove_extra_spaces = remove_extra_spaces
-
-        self.stats = {
-            "total_loaded": 0,
-            "total_failed": 0,
-            "total_tokens": 0
-        }
-
-        logger.info("📝 DocxLoader initialized")
-
-    # ============================================================
-    # الطرق الرئيسية
-    # ============================================================
-
-    def load_file(self, file_path: str) -> Optional[Dict[str, Any]]:
-        try:
-            path = Path(file_path)
-
-            if not path.exists():
-                logger.error(f"❌ File not found: {file_path}")
-                return None
-
-            if not path.suffix.lower() == '.docx':
-                logger.warning(f"⚠️ Not a DOCX file: {file_path}")
-                return None
-
-            text = self.extract_text(path)
-
-            if not text:
-                logger.warning(f"⚠️ No text extracted from: {file_path}")
-                return None
-
-            metadata = self.extract_metadata(path)
-            
-            # ✅ تنظيف البيانات الوصفية قبل الإرجاع
-            metadata = clean_metadata_for_chroma(metadata)
-
-            if self.clean_text:
-                text = self._clean_extracted_text(text)
-
-            self.stats["total_loaded"] += 1
-            self.stats["total_tokens"] += len(text.split())
-
-            return {
-                "text": text,
-                "metadata": metadata,
-                "file_path": str(path),
-                "filename": path.name,
-                "file_size": path.stat().st_size,
-                "loaded_at": datetime.now().isoformat()
-            }
-
-        except Exception as e:
-            logger.error(f"❌ Error loading DOCX {file_path}: {str(e)}")
-            self.stats["total_failed"] += 1
-            return None
-
-    def load_directory(
+    def __init__(
         self,
-        directory_path: str,
-        recursive: bool = True,
-        max_files: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
-        documents = []
-        path = Path(directory_path)
+        collection_name: str = "documents",
+        embedding_model: Optional[str] = None
+    ):
+        """
+        تهيئة محمل Chroma
+        
+        Args:
+            collection_name: اسم المجموعة
+            embedding_model: نموذج التضمين (افتراضي من الإعدادات)
+        """
+        self.collection_name = collection_name
+        self.embedding_model = embedding_model or settings.EMBEDDING_MODEL
+        
+        # مسار التخزين الدائم
+        self.persist_path = settings.CHROMA_PATH
+        
+        # إنشاء المجلد إذا لم يكن موجوداً
+        self.persist_path.mkdir(parents=True, exist_ok=True)
+        
+        # تهيئة العميل مع تخزين دائم
+        self.client = chromadb.PersistentClient(
+            path=str(self.persist_path)
+        )
+        
+        # تهيئة دالة التضمين
+        self.embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
+            model_name=self.embedding_model
+        )
+        
+        # الحصول على المجموعة (أو إنشاؤها)
+        self.collection = self.client.get_or_create_collection(
+            name=self.collection_name,
+            embedding_function=self.embedding_fn,
+            metadata={"hnsw:space": "cosine"}
+        )
+        
+        self.is_loaded = True
+        self.stats = {
+            "total_documents": self.collection.count(),
+            "total_searches": 0,
+            "avg_search_time": 0,
+            "last_search_time": 0
+        }
+        
+        logger.info(f"🗄️ ChromaLoader initialized with collection: {collection_name}")
+        logger.info(f"📊 Documents in collection: {self.collection.count()}")
 
-        if not path.exists():
-            logger.error(f"❌ Directory not found: {directory_path}")
+    # ============================================================
+    # طرق البحث
+    # ============================================================
+    
+    async def search(
+        self,
+        query_vector: List[float],
+        top_k: int = 10,
+        include_metadata: bool = True,
+        filter_category: Optional[str] = None,
+        filter_supplier: Optional[str] = None,
+        min_score: float = 0.0
+    ) -> List[Dict[str, Any]]:
+        """
+        البحث في قاعدة البيانات باستخدام المتجهات
+        
+        Args:
+            query_vector: متجه السؤال
+            top_k: عدد النتائج المطلوبة
+            include_metadata: تضمين البيانات الوصفية
+            filter_category: تصفية حسب التصنيف
+            filter_supplier: تصفية حسب المورد
+            min_score: الحد الأدنى لدرجة المطابقة
+            
+        Returns:
+            قائمة النتائج
+        """
+        import time
+        start_time = time.time()
+        
+        # ✅ التأكد من صيغة المتجه
+        if isinstance(query_vector, np.ndarray):
+            query_vector = query_vector.tolist()
+        elif not isinstance(query_vector, list):
+            query_vector = list(query_vector)
+        
+        # التأكد من أن المتجه هو قائمة مسطحة
+        if query_vector and isinstance(query_vector[0], (list, np.ndarray)):
+            query_vector = query_vector[0]
+        
+        # بناء شرط التصفية
+        where_filter = {}
+        if filter_category:
+            where_filter["category"] = filter_category
+        if filter_supplier:
+            where_filter["supplier"] = filter_supplier
+        
+        try:
+            # ✅ التحقق من وجود مستندات
+            if self.collection.count() == 0:
+                logger.warning("⚠️ Collection is empty")
+                return []
+            
+            # البحث في Chroma
+            results = self.collection.query(
+                query_embeddings=[query_vector],
+                n_results=min(top_k, self.collection.count()),
+                where=where_filter if where_filter else None,
+                include=["documents", "metadatas", "distances"]
+            )
+            
+            # تنسيق النتائج
+            formatted_results = []
+            
+            if results and results.get("ids") and len(results["ids"]) > 0:
+                ids = results["ids"][0]
+                documents = results.get("documents", [[]])[0]
+                metadatas = results.get("metadatas", [[]])[0]
+                distances = results.get("distances", [[]])[0]
+                
+                for i, doc_id in enumerate(ids):
+                    # حساب درجة التشابه من المسافة
+                    distance = distances[i] if i < len(distances) else 1.0
+                    similarity = 1 / (1 + distance)
+                    
+                    # تصفية حسب الحد الأدنى للدرجة
+                    if similarity < min_score:
+                        continue
+                    
+                    result = {
+                        "id": doc_id,
+                        "text": documents[i] if i < len(documents) else "",
+                        "metadata": metadatas[i] if i < len(metadatas) else {},
+                        "relevance_score": similarity,
+                        "distance": distance
+                    }
+                    formatted_results.append(result)
+            
+            # تحديث الإحصائيات
+            elapsed = time.time() - start_time
+            self._update_stats(len(formatted_results), elapsed)
+            
+            logger.info(f"🔍 Found {len(formatted_results)} results in {elapsed:.3f}s")
+            
+            return formatted_results
+            
+        except Exception as e:
+            logger.error(f"❌ Error searching Chroma: {str(e)}")
             return []
 
-        pattern = "**/*.docx" if recursive else "*.docx"
-        files = list(path.glob(pattern))
-
-        logger.info(f"📁 Found {len(files)} DOCX files in {directory_path}")
-
-        if max_files and len(files) > max_files:
-            files = files[:max_files]
-            logger.info(f"📁 Limiting to {max_files} files")
-
-        for file_path in files:
-            doc = self.load_file(str(file_path))
-            if doc:
-                documents.append(doc)
-
-        logger.info(f"✅ Loaded {len(documents)} DOCX documents")
-
-        return documents
-
     # ============================================================
-    # طرق استخراج النص
+    # طرق إدارة المستندات
     # ============================================================
-
-    def extract_text(self, file_path: Path) -> str:
-        try:
-            with zipfile.ZipFile(file_path, 'r') as zip_file:
-                if 'word/document.xml' not in zip_file.namelist():
-                    logger.warning(f"⚠️ No document.xml found in {file_path}")
-                    return ""
-
-                with zip_file.open('word/document.xml') as xml_file:
-                    content = xml_file.read().decode('utf-8')
-
-                    text = self._extract_text_from_xml(content)
-                    text += self._extract_headers_and_footers(zip_file)
-                    text += self._extract_tables(zip_file)
-
-                    return text
-
-        except Exception as e:
-            logger.error(f"❌ Error extracting text from {file_path}: {str(e)}")
-            return ""
-
-    def _extract_text_from_xml(self, xml_content: str) -> str:
-        try:
-            root = ET.fromstring(xml_content)
-
-            texts = []
-            for elem in root.iter():
-                if elem.tag.endswith('t'):
-                    if elem.text:
-                        texts.append(elem.text)
-                elif elem.tag.endswith('p'):
-                    if texts and not texts[-1].endswith('\n'):
-                        texts.append('\n')
-
-            return ''.join(texts)
-
-        except Exception as e:
-            logger.error(f"❌ Error parsing XML: {str(e)}")
-            return ""
-
-    def _extract_headers_and_footers(self, zip_file: zipfile.ZipFile) -> str:
-        text = ""
-
-        paths = [
-            'word/header1.xml',
-            'word/header2.xml',
-            'word/header3.xml',
-            'word/footer1.xml',
-            'word/footer2.xml',
-            'word/footer3.xml'
-        ]
-
-        for path in paths:
-            if path in zip_file.namelist():
-                try:
-                    with zip_file.open(path) as f:
-                        content = f.read().decode('utf-8')
-                        extracted = self._extract_text_from_xml(content)
-                        if extracted:
-                            text += f"\n[{path}]\n{extracted}\n"
-                except Exception:
-                    continue
-
-        return text
-
-    def _extract_tables(self, zip_file: zipfile.ZipFile) -> str:
-        text = ""
-
-        if 'word/document.xml' in zip_file.namelist():
-            try:
-                with zip_file.open('word/document.xml') as f:
-                    content = f.read().decode('utf-8')
-                    root = ET.fromstring(content)
-
-                    for table in root.iter():
-                        if table.tag.endswith('tbl'):
-                            text += "\n[TABLE]\n"
-                            for row in table.iter():
-                                if row.tag.endswith('tr'):
-                                    row_text = []
-                                    for cell in row.iter():
-                                        if cell.tag.endswith('tc'):
-                                            cell_text = self._extract_text_from_xml(
-                                                ET.tostring(cell, encoding='unicode')
-                                            )
-                                            if cell_text.strip():
-                                                row_text.append(cell_text.strip())
-                                    if row_text:
-                                        text += " | ".join(row_text) + "\n"
-                            text += "[/TABLE]\n"
-            except Exception:
-                pass
-
-        return text
-
-    # ============================================================
-    # طرق استخراج البيانات الوصفية
-    # ============================================================
-
-    def extract_metadata(self, file_path: Path) -> Dict[str, Any]:
-        metadata = {
-            "filename": file_path.name,
-            "file_path": str(file_path),
-            "file_size": file_path.stat().st_size,
-            "extension": file_path.suffix,
-            "category": self._guess_category(str(file_path)),
-            "created_at": None,
-            "modified_at": None,
-            "author": None,
-            "title": None,
-            "subject": None,
-            "keywords": None,
-            "comments": None,
-            "page_count": None,
-            "word_count": None,
-            "paragraph_count": None
-        }
-
-        try:
-            with zipfile.ZipFile(file_path, 'r') as zip_file:
-                if 'docProps/core.xml' in zip_file.namelist():
-                    with zip_file.open('docProps/core.xml') as f:
-                        content = f.read().decode('utf-8')
-                        metadata.update(self._extract_core_properties(content))
-
-                if 'docProps/app.xml' in zip_file.namelist():
-                    with zip_file.open('docProps/app.xml') as f:
-                        content = f.read().decode('utf-8')
-                        metadata.update(self._extract_app_properties(content))
-
-        except Exception as e:
-            logger.debug(f"⚠️ Could not extract metadata: {str(e)}")
-
-        metadata["loaded_at"] = datetime.now().isoformat()
+    
+    def add_document(
+        self,
+        doc_id: str,
+        text: str,
+        embedding: List[float],
+        metadata: Dict[str, Any]
+    ) -> bool:
+        """
+        إضافة مستند إلى قاعدة البيانات
         
-        # ✅ تنظيف البيانات الوصفية قبل الإرجاع
-        return clean_metadata_for_chroma(metadata)
-
-    def _extract_core_properties(self, content: str) -> Dict[str, Any]:
-        properties = {}
-
+        Args:
+            doc_id: معرف المستند
+            text: نص المستند
+            embedding: متجه المستند
+            metadata: البيانات الوصفية
+            
+        Returns:
+            نجاح العملية
+        """
         try:
-            root = ET.fromstring(content)
+            # ✅ تنظيف البيانات الوصفية
+            clean_meta = clean_metadata_for_chroma(metadata)
+            
+            # ✅ التأكد من صيغة المتجه
+            if isinstance(embedding, np.ndarray):
+                embedding = embedding.tolist()
+            elif not isinstance(embedding, list):
+                embedding = list(embedding)
+            
+            self.collection.add(
+                ids=[doc_id],
+                embeddings=[embedding],
+                documents=[text],
+                metadatas=[clean_meta]
+            )
+            
+            self.stats["total_documents"] = self.collection.count()
+            logger.info(f"✅ Document added: {doc_id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"❌ Error adding document: {str(e)}")
+            return False
 
-            for child in root:
-                tag = child.tag.split('}')[-1] if '}' in child.tag else child.tag
-
-                if tag == 'title':
-                    properties['title'] = child.text
-                elif tag == 'subject':
-                    properties['subject'] = child.text
-                elif tag == 'creator':
-                    properties['author'] = child.text
-                elif tag == 'description':
-                    properties['comments'] = child.text
-                elif tag == 'keywords':
-                    properties['keywords'] = child.text
-                elif tag == 'created':
-                    properties['created_at'] = child.text
-                elif tag == 'modified':
-                    properties['modified_at'] = child.text
-
-        except Exception:
-            pass
-
-        return properties
-
-    def _extract_app_properties(self, content: str) -> Dict[str, Any]:
-        properties = {}
-
+    def add_documents(
+        self,
+        documents: List[Dict[str, Any]]
+    ) -> int:
+        """
+        إضافة مستندات متعددة إلى قاعدة البيانات
+        
+        Args:
+            documents: قائمة المستندات (كل مستند يحتوي على id, text, embedding, metadata)
+            
+        Returns:
+            عدد المستندات المضافة
+        """
+        if not documents:
+            return 0
+        
         try:
-            root = ET.fromstring(content)
+            ids = []
+            texts = []
+            embeddings = []
+            metadatas = []
+            
+            for doc in documents:
+                # ✅ تنظيف البيانات الوصفية
+                clean_meta = clean_metadata_for_chroma(doc.get("metadata", {}))
+                
+                # ✅ التأكد من صيغة المتجه
+                embedding = doc.get("embedding", [])
+                if isinstance(embedding, np.ndarray):
+                    embedding = embedding.tolist()
+                elif not isinstance(embedding, list):
+                    embedding = list(embedding)
+                
+                ids.append(doc.get("id", str(uuid.uuid4())))
+                texts.append(doc.get("text", ""))
+                embeddings.append(embedding)
+                metadatas.append(clean_meta)
+            
+            # ✅ التأكد من أن جميع القوائم بنفس الطول
+            if not (len(ids) == len(texts) == len(embeddings) == len(metadatas)):
+                logger.error("❌ Mismatched lengths in documents")
+                return 0
+            
+            self.collection.add(
+                ids=ids,
+                documents=texts,
+                embeddings=embeddings,
+                metadatas=metadatas
+            )
+            
+            self.stats["total_documents"] = self.collection.count()
+            logger.info(f"✅ {len(documents)} documents added")
+            return len(documents)
+            
+        except Exception as e:
+            logger.error(f"❌ Error adding documents: {str(e)}")
+            return 0
 
-            for child in root:
-                tag = child.tag.split('}')[-1] if '}' in child.tag else child.tag
+    def delete_document(self, doc_id: str) -> bool:
+        """
+        حذف مستند من قاعدة البيانات
+        
+        Args:
+            doc_id: معرف المستند
+            
+        Returns:
+            نجاح العملية
+        """
+        try:
+            self.collection.delete(ids=[doc_id])
+            self.stats["total_documents"] = self.collection.count()
+            logger.info(f"🗑️ Document deleted: {doc_id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"❌ Error deleting document: {str(e)}")
+            return False
 
-                if tag == 'Pages':
-                    properties['page_count'] = int(child.text) if child.text else None
-                elif tag == 'Words':
-                    properties['word_count'] = int(child.text) if child.text else None
-                elif tag == 'Paragraphs':
-                    properties['paragraph_count'] = int(child.text) if child.text else None
+    def update_document(
+        self,
+        doc_id: str,
+        text: str,
+        embedding: List[float],
+        metadata: Dict[str, Any]
+    ) -> bool:
+        """
+        تحديث مستند في قاعدة البيانات
+        
+        Args:
+            doc_id: معرف المستند
+            text: نص المستند الجديد
+            embedding: متجه المستند الجديد
+            metadata: البيانات الوصفية الجديدة
+            
+        Returns:
+            نجاح العملية
+        """
+        try:
+            # حذف المستند القديم
+            self.collection.delete(ids=[doc_id])
+            # إضافة المستند الجديد
+            return self.add_document(doc_id, text, embedding, metadata)
+            
+        except Exception as e:
+            logger.error(f"❌ Error updating document: {str(e)}")
+            return False
 
-        except Exception:
-            pass
-
-        return properties
-
-    def _guess_category(self, file_path: str) -> str:
-        filename = Path(file_path).name.lower()
-
-        if 'contract' in filename or 'عقد' in filename:
-            return 'contracts'
-        elif 'policy' in filename or 'سياسة' in filename:
-            return 'policies'
-        elif 'quotation' in filename or 'عرض' in filename or 'سعر' in filename:
-            return 'quotations'
-        elif 'quality' in filename or 'جودة' in filename or 'تقرير' in filename:
-            return 'quality_reports'
-        elif 'report' in filename:
-            return 'reports'
-        elif 'manual' in filename or 'دليل' in filename:
-            return 'manuals'
-        elif 'invoice' in filename or 'فاتورة' in filename:
-            return 'invoices'
-        else:
-            return 'other'
+    def clear(self) -> bool:
+        """
+        حذف جميع المستندات من المجموعة
+        
+        Returns:
+            نجاح العملية
+        """
+        try:
+            # حذف المجموعة وإعادة إنشاؤها
+            self.client.delete_collection(self.collection_name)
+            self.collection = self.client.create_collection(
+                name=self.collection_name,
+                embedding_function=self.embedding_fn,
+                metadata={"hnsw:space": "cosine"}
+            )
+            self.stats["total_documents"] = 0
+            logger.info("🗑️ Collection cleared")
+            return True
+            
+        except Exception as e:
+            logger.error(f"❌ Error clearing collection: {str(e)}")
+            return False
 
     # ============================================================
-    # طرق تنظيف النص
+    # طرق الاستعلام
     # ============================================================
+    
+    def get_all_documents(self) -> List[Dict[str, Any]]:
+        """
+        الحصول على جميع المستندات في المجموعة
+        
+        Returns:
+            قائمة المستندات
+        """
+        try:
+            results = self.collection.get(
+                include=["documents", "metadatas"]
+            )
+            
+            documents = []
+            if results and results.get("ids"):
+                for i, doc_id in enumerate(results["ids"]):
+                    documents.append({
+                        "id": doc_id,
+                        "text": results["documents"][i] if i < len(results["documents"]) else "",
+                        "metadata": results["metadatas"][i] if i < len(results["metadatas"]) else {}
+                    })
+            
+            return documents
+            
+        except Exception as e:
+            logger.error(f"❌ Error getting all documents: {str(e)}")
+            return []
 
-    def _clean_extracted_text(self, text: str) -> str:
-        if not text:
-            return ""
+    def get_document(self, doc_id: str) -> Optional[Dict[str, Any]]:
+        """
+        الحصول على مستند محدد
+        
+        Args:
+            doc_id: معرف المستند
+            
+        Returns:
+            المستند أو None
+        """
+        try:
+            results = self.collection.get(
+                ids=[doc_id],
+                include=["documents", "metadatas"]
+            )
+            
+            if results and results.get("ids") and len(results["ids"]) > 0:
+                return {
+                    "id": results["ids"][0],
+                    "text": results["documents"][0] if results.get("documents") else "",
+                    "metadata": results["metadatas"][0] if results.get("metadatas") else {}
+                }
+            return None
+            
+        except Exception as e:
+            logger.error(f"❌ Error getting document: {str(e)}")
+            return None
 
-        text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', text)
-        text = re.sub(r'<[^>]+>', '', text)
+    def get_index_size(self) -> int:
+        """
+        الحصول على عدد المستندات في المجموعة
+        
+        Returns:
+            عدد المستندات
+        """
+        try:
+            return self.collection.count()
+        except Exception as e:
+            logger.error(f"❌ Error getting index size: {str(e)}")
+            return 0
 
-        if self.remove_extra_spaces:
-            text = re.sub(r'\s+', ' ', text)
-            text = re.sub(r'\n\s*\n', '\n\n', text)
-
-        text = re.sub(r'\n{3,}', '\n\n', text)
-        text = text.strip()
-
-        return text
+    def get_index_info(self) -> Dict[str, Any]:
+        """
+        الحصول على معلومات المجموعة
+        
+        Returns:
+            معلومات المجموعة
+        """
+        return {
+            "status": "loaded" if self.is_loaded else "not_loaded",
+            "collection_name": self.collection_name,
+            "total_vectors": self.collection.count(),
+            "persist_path": str(self.persist_path)
+        }
 
     # ============================================================
     # طرق إضافية
     # ============================================================
+    
+    def save(self) -> bool:
+        """
+        حفظ البيانات (Chroma يحفظ تلقائياً، لكن هذه الدالة للتأكد)
+        
+        Returns:
+            نجاح العملية
+        """
+        try:
+            logger.info("✅ Chroma data saved (automatic)")
+            return True
+        except Exception as e:
+            logger.error(f"❌ Error saving Chroma: {str(e)}")
+            return False
+
+    def _update_stats(self, count: int, elapsed: float) -> None:
+        """
+        تحديث الإحصائيات
+        """
+        self.stats["total_searches"] += 1
+        self.stats["last_search_time"] = elapsed
+        
+        total = self.stats["total_searches"]
+        if total > 0:
+            self.stats["avg_search_time"] = (
+                (self.stats["avg_search_time"] * (total - 1) + elapsed) / total
+            )
 
     def get_stats(self) -> Dict[str, Any]:
+        """
+        الحصول على إحصائيات المحمل
+        
+        Returns:
+            إحصائيات المحمل
+        """
         return {
             **self.stats,
-            "total_loaded": self.stats["total_loaded"],
-            "total_failed": self.stats["total_failed"],
-            "total_tokens": self.stats["total_tokens"]
+            "collection_name": self.collection_name,
+            "persist_path": str(self.persist_path),
+            "is_loaded": self.is_loaded
         }
 
     def reset_stats(self) -> None:
+        """
+        إعادة تعيين الإحصائيات
+        """
         self.stats = {
-            "total_loaded": 0,
-            "total_failed": 0,
-            "total_tokens": 0
+            "total_documents": self.collection.count(),
+            "total_searches": 0,
+            "avg_search_time": 0,
+            "last_search_time": 0
         }
-        logger.info("🔄 DocxLoader stats reset")
-
-    def is_supported(self, file_path: str) -> bool:
-        return Path(file_path).suffix.lower() == '.docx'
-
-    def get_file_info(self, file_path: str) -> Dict[str, Any]:
-        path = Path(file_path)
-
-        info = {
-            "filename": path.name,
-            "file_path": str(path),
-            "file_size": path.stat().st_size,
-            "extension": path.suffix,
-            "is_supported": self.is_supported(file_path),
-            "category": self._guess_category(file_path)
-        }
-
-        if info["is_supported"]:
-            try:
-                with zipfile.ZipFile(file_path, 'r') as zip_file:
-                    if 'docProps/core.xml' in zip_file.namelist():
-                        with zip_file.open('docProps/core.xml') as f:
-                            content = f.read().decode('utf-8')
-                            core = self._extract_core_properties(content)
-                            info.update(core)
-            except Exception:
-                pass
-
-        return clean_metadata_for_chroma(info)
+        logger.info("🔄 ChromaLoader stats reset")
