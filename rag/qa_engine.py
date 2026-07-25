@@ -1,556 +1,549 @@
+# app/rag/reranker.py
 """
-🧠 محرك الأسئلة والأجوبة (QA Engine)
+📊 إعادة ترتيب النتائج (Reranker)
 
-يدير تدفق RAG بالكامل:
-1. استرجاع المستندات
-2. إعادة ترتيب النتائج
-3. بناء السياق
-4. توليد الإجابة
+يقوم بإعادة ترتيب المستندات المسترجعة حسب الأهمية باستخدام Cross-Encoder
 """
 
 from typing import List, Dict, Any, Optional, Tuple
-from dataclasses import dataclass, field
-import time
+import numpy as np
 import hashlib
+from dataclasses import dataclass, field
 from datetime import datetime
 
-from rag.retriever import Retriever
-from rag.reranker import Reranker
-from rag.chunking import Chunking, Chunk
-from llm.groq_client import GroqClient
-from core.config import settings
-from core.prompts import get_rag_prompt, get_system_prompt
+# محاولة استيراد المكتبات المطلوبة
+try:
+    from sentence_transformers import CrossEncoder
+    CROSS_ENCODER_AVAILABLE = True
+except ImportError:
+    CROSS_ENCODER_AVAILABLE = False
+    print("⚠️ CrossEncoder not available. Using simple reranking.")
+
 from utils.logger import logger
+from core.config import settings
 
 
 @dataclass
-class QAResult:
+class RerankedDocument:
     """
-    نتيجة محرك الأسئلة والأجوبة
+    مستند مع درجاته بعد إعادة الترتيب
     """
-    question: str
-    answer: str
-    sources: List[Dict[str, Any]]
-    confidence_score: float
-    processing_time: float
-    retrieved_count: int
-    reranked_count: int
-    chunks_used: int
-    timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    id: str
+    text: str
+    metadata: Dict[str, Any]
+    original_score: float
+    rerank_score: float
+    combined_score: float
+    rank: int
+    relevance_label: str  # high, medium, low
 
 
-class QAEngine:
+class Reranker:
     """
-    محرك الأسئلة والأجوبة (RAG Pipeline)
+    إعادة ترتيب نتائج البحث
     
-    يقوم بتنفيذ تدفق RAG بالكامل:
-    1. استرجاع المستندات من FAISS
-    2. إعادة ترتيب النتائج
-    3. بناء السياق
-    4. توليد الإجابة باستخدام LLM
+    يدعم:
+    - Cross-Encoder لإعادة الترتيب
+    - إعادة ترتيب بسيط بدون نموذج
+    - دمج درجات متعددة
+    - تصنيف النتائج حسب الأهمية
     """
     
     def __init__(
         self,
-        retriever: Optional[Retriever] = None,
-        reranker: Optional[Reranker] = None,
-        chunking: Optional[Chunking] = None,
-        llm: Optional[GroqClient] = None
+        model_name: str = "cross-encoder/ms-marco-MiniLM-L-6-v2",
+        use_cross_encoder: bool = True,
+        weights: Optional[Dict[str, float]] = None
     ):
         """
-        تهيئة محرك الأسئلة والأجوبة
+        تهيئة أداة إعادة الترتيب
         
         Args:
-            retriever: أداة الاسترجاع
-            reranker: أداة إعادة الترتيب
-            chunking: أداة التقسيم
-            llm: عميل النموذج اللغوي
+            model_name: اسم نموذج Cross-Encoder
+            use_cross_encoder: استخدام Cross-Encoder
+            weights: أوزان الدمج المختلفة
         """
-        self.retriever = retriever or Retriever()
-        self.reranker = reranker or Reranker()
-        self.chunking = chunking or Chunking()
-        self.llm = llm or GroqClient()
+        self.model_name = model_name
+        self.use_cross_encoder = use_cross_encoder and CROSS_ENCODER_AVAILABLE
+        self.model = None
         
-        self.default_top_k = settings.DEFAULT_TOP_K
-        self.default_max_sources = settings.DEFAULT_MAX_SOURCES
-        self.min_confidence = settings.MIN_CONFIDENCE_SCORE
+        # الأوزان الافتراضية للدمج
+        self.weights = weights or {
+            "relevance": 0.6,      # درجة المطابقة
+            "recency": 0.15,       # الحداثة
+            "popularity": 0.15,    # الشعبية
+            "quality": 0.1         # الجودة
+        }
         
-        logger.info("🧠 QA Engine initialized successfully")
+        # تحميل النموذج إذا كان متاحاً
+        if self.use_cross_encoder:
+            try:
+                self.model = CrossEncoder(model_name)
+                logger.info(f"✅ Cross-Encoder loaded: {model_name}")
+            except Exception as e:
+                logger.warning(f"⚠️ Failed to load Cross-Encoder: {e}")
+                self.use_cross_encoder = False
+        
+        self.stats = {
+            "total_reranked": 0,
+            "avg_rerank_time": 0,
+            "last_rerank_time": 0
+        }
+        
+        logger.info("📊 Reranker initialized")
     
     # ============================================================
     # الطريقة الرئيسية
     # ============================================================
     
-    async def answer(
+    async def rerank(
         self,
-        question: str,
-        top_k: int = None,
-        max_sources: int = None,
-        temperature: float = None,
-        include_sources: bool = True,
-        filter_category: Optional[str] = None,
-        filter_supplier: Optional[str] = None,
-        context: str = "",
-        **kwargs
-    ) -> QAResult:
+        query: str,
+        documents: List[Dict[str, Any]],
+        top_k: Optional[int] = None,
+        return_all: bool = False
+    ) -> List[Dict[str, Any]]:
         """
-        الإجابة على سؤال باستخدام RAG
+        إعادة ترتيب المستندات حسب أهميتها للسؤال
         
         Args:
-            question: سؤال المستخدم
-            top_k: عدد المستندات المسترجعة
-            max_sources: الحد الأقصى للمصادر
-            temperature: درجة الإبداع
-            include_sources: عرض المصادر
-            filter_category: تصفية حسب التصنيف
-            filter_supplier: تصفية حسب المورد
-            context: سياق إضافي (من المحادثة السابقة)
+            query: سؤال المستخدم
+            documents: قائمة المستندات المسترجعة
+            top_k: عدد النتائج المطلوبة
+            return_all: إرجاع جميع النتائج
             
         Returns:
-            QAResult: نتيجة السؤال
+            قائمة المستندات المرتبة
         """
         import time
         start_time = time.time()
         
-        logger.info(f"🧠 Processing question: {question[:50]}...")
+        if not documents:
+            return []
         
-        # 1. إعداد المعلمات
-        top_k = top_k or self.default_top_k
-        max_sources = max_sources or self.default_max_sources
-        temperature = temperature or settings.DEFAULT_TEMPERATURE
+        logger.info(f"📊 Reranking {len(documents)} documents")
         
-        # ✅ التحقق مما إذا كان السؤال عاماً (لا يحتاج إلى استرجاع مستندات)
-        is_general_question = self._is_general_question(question)
+        # 1. حساب درجات إعادة الترتيب
+        reranked_docs = await self._compute_rerank_scores(query, documents)
         
-        if is_general_question:
-            logger.info(f"💬 سؤال عام تم اكتشافه: {question[:50]}... - سيتم الرد بدون استرجاع مستندات")
-            # الإجابة على السؤال العام بدون سياق
-            full_context = ""
-            retrieved_docs = []
-            reranked_docs = []
-            retrieved_count = 0
-            reranked_count = 0
-            chunks_used = 0
-            
-            # توليد الإجابة بدون سياق
-            answer = await self.llm.generate(
-                question=question,
-                context="",
-                temperature=temperature,
-                system_prompt=kwargs.get("system_prompt") or self._get_general_system_prompt()
-            )
-            
-            confidence_score = 0.8  # ثقة عالية في الأسئلة العامة
-            sources = []
-            
-        else:
-            # 2. تحسين السؤال (للأسئلة العادية)
-            enhanced_question = self._enhance_question(question)
-            
-            # 3. استرجاع المستندات
-            retrieved_docs = await self.retriever.retrieve(
-                query=enhanced_question,
-                top_k=top_k,
-                filter_category=filter_category,
-                filter_supplier=filter_supplier
-            )
-            
-            retrieved_count = len(retrieved_docs)
-            logger.info(f"📚 Retrieved {retrieved_count} documents")
-            
-            # 4. إعادة ترتيب النتائج
-            reranked_docs = await self.reranker.rerank(
-                query=question,
-                documents=retrieved_docs,
-                top_k=max_sources
-            )
-            
-            reranked_count = len(reranked_docs)
-            logger.info(f"📊 Reranked to {reranked_count} documents")
-            
-            # 5. بناء السياق
-            built_context = self._build_context(reranked_docs)
-            
-            # دمج السياق الإضافي (من المحادثة السابقة)
-            if context and context.strip():
-                full_context = f"سياق المحادثة السابقة:\n{context}\n\nمعلومات من المستندات:\n{built_context}"
-            else:
-                full_context = built_context
-            
-            # ✅ اقتصاص السياق الكامل إذا كان كبيراً جداً (حماية إضافية)
-            if len(full_context) > 3000:
-                full_context = full_context[:3000] + "\n...(تم اختصار السياق لتقليل حجم الطلب)"
-            
-            chunks_used = len(reranked_docs)
-            
-            # 6. توليد الإجابة
-            answer = await self.llm.generate(
-                question=question,
-                context=full_context,
-                temperature=temperature,
-                system_prompt=kwargs.get("system_prompt")
-            )
-            
-            # 7. حساب درجة الثقة
-            confidence_score = self._calculate_confidence(
-                reranked_docs,
-                len(answer),
-                chunks_used
-            )
-            
-            # 8. تجهيز المصادر
-            sources = []
-            if include_sources:
-                sources = self._format_sources(reranked_docs)
+        # 2. ترتيب حسب الدرجة
+        reranked_docs.sort(key=lambda x: x.combined_score, reverse=True)
         
-        # 9. حساب زمن المعالجة
-        processing_time = time.time() - start_time
+        # 3. إضافة الترتيب والتسمية
+        for i, doc in enumerate(reranked_docs):
+            doc.rank = i + 1
+            doc.relevance_label = self._get_relevance_label(doc.combined_score)
         
-        # 10. بناء النتيجة
-        result = QAResult(
-            question=question,
-            answer=answer,
-            sources=sources,
-            confidence_score=confidence_score,
-            processing_time=processing_time,
-            retrieved_count=retrieved_count,
-            reranked_count=reranked_count,
-            chunks_used=chunks_used,
-            metadata={
-                "temperature": temperature,
-                "top_k": top_k,
-                "max_sources": max_sources,
-                "filter_category": filter_category,
-                "filter_supplier": filter_supplier,
-                "is_general_question": is_general_question
-            }
-        )
+        # 4. تحويل إلى صيغة الإخراج
+        result = []
+        for doc in reranked_docs:
+            result.append({
+                "id": doc.id,
+                "text": doc.text,
+                "metadata": doc.metadata,
+                "original_score": doc.original_score,
+                "rerank_score": doc.rerank_score,
+                "combined_score": doc.combined_score,
+                "rank": doc.rank,
+                "relevance_label": doc.relevance_label
+            })
         
-        logger.info(f"✅ Answer generated in {processing_time:.2f}s")
+        # 5. تحديد عدد النتائج
+        if not return_all and top_k:
+            result = result[:top_k]
+        
+        # 6. تحديث الإحصائيات
+        elapsed = time.time() - start_time
+        self._update_stats(len(documents), elapsed)
+        
+        logger.info(f"✅ Reranked {len(result)} documents in {elapsed:.3f}s")
         
         return result
     
     # ============================================================
-    # طرق بناء السياق
+    # طرق حساب الدرجات
     # ============================================================
     
-    def _build_context(self, documents: List[Dict[str, Any]]) -> str:
+    async def _compute_rerank_scores(
+        self,
+        query: str,
+        documents: List[Dict[str, Any]]
+    ) -> List[RerankedDocument]:
         """
-        بناء السياق من المستندات المسترجعة
+        حساب درجات إعادة الترتيب لكل مستند
         
         Args:
+            query: سؤال المستخدم
             documents: قائمة المستندات
             
         Returns:
-            النص السياقي
+            قائمة المستندات مع درجاتها
         """
-        if not documents:
-            return "لا توجد معلومات كافية للإجابة على هذا السؤال."
+        reranked = []
         
-        context_parts = []
+        # 1. حساب درجات Cross-Encoder
+        cross_scores = []
+        if self.use_cross_encoder and self.model:
+            try:
+                # تجهيز الأزواج (السؤال، النص)
+                pairs = [[query, doc.get("text", "")] for doc in documents]
+                cross_scores = self.model.predict(pairs)
+                
+                # تطبيع الدرجات
+                if len(cross_scores) > 0:
+                    max_score = max(cross_scores)
+                    min_score = min(cross_scores)
+                    if max_score > min_score:
+                        cross_scores = [
+                            (s - min_score) / (max_score - min_score)
+                            for s in cross_scores
+                        ]
+                    else:
+                        cross_scores = [0.5] * len(cross_scores)
+            except Exception as e:
+                logger.error(f"❌ Cross-Encoder error: {e}")
+                cross_scores = [0.5] * len(documents)
+        else:
+            # استخدام الدرجات الأصلية إذا لم يتوفر Cross-Encoder
+            cross_scores = [
+                doc.get("relevance_score", 0.5)
+                for doc in documents
+            ]
         
-        for i, doc in enumerate(documents, 1):
-            # إضافة رقم المستند ومصدره
-            source = doc.get("metadata", {}).get("filename", f"مصدر {i}")
-            category = doc.get("metadata", {}).get("category", "غير مصنف")
-            relevance = doc.get("relevance_score", 0.0)
+        # 2. حساب الدرجات لكل مستند
+        for i, doc in enumerate(documents):
+            # الدرجة الأصلية
+            original_score = doc.get("relevance_score", 0.5)
             
-            # ✅ اقتصاص النص إلى 500 حرف كحد أقصى لكل مستند
-            text_content = doc.get('text', '')
-            if len(text_content) > 500:
-                text_content = text_content[:500] + "..."
+            # درجة Cross-Encoder (إعادة الترتيب)
+            rerank_score = cross_scores[i] if i < len(cross_scores) else original_score
             
-            context_parts.append(f"[{i}] المصدر: {source}")
-            context_parts.append(f"    التصنيف: {category}")
-            context_parts.append(f"    درجة المطابقة: {relevance:.2%}")
-            context_parts.append(f"    المحتوى:\n    {text_content}")
-            context_parts.append("")
-        
-        return "\n".join(context_parts)
-    
-    def _build_context_chunks(self, chunks: List[Chunk]) -> str:
-        """
-        بناء السياق من قطع النصوص
-        
-        Args:
-            chunks: قائمة القطع النصية
+            # درجات إضافية
+            recency_score = self._calculate_recency_score(doc)
+            popularity_score = self._calculate_popularity_score(doc)
+            quality_score = self._calculate_quality_score(doc)
             
-        Returns:
-            النص السياقي
-        """
-        if not chunks:
-            return "لا توجد معلومات كافية."
+            # دمج الدرجات
+            combined_score = (
+                self.weights["relevance"] * rerank_score +
+                self.weights["recency"] * recency_score +
+                self.weights["popularity"] * popularity_score +
+                self.weights["quality"] * quality_score
+            )
+            
+            # إنشاء الكائن
+            reranked_doc = RerankedDocument(
+                id=doc.get("id", f"doc_{i}"),
+                text=doc.get("text", ""),
+                metadata=doc.get("metadata", {}),
+                original_score=original_score,
+                rerank_score=rerank_score,
+                combined_score=combined_score,
+                rank=0,  # سيتم تحديثه لاحقاً
+                relevance_label="medium"  # سيتم تحديثه لاحقاً
+            )
+            
+            reranked.append(reranked_doc)
         
-        context_parts = []
-        
-        for i, chunk in enumerate(chunks, 1):
-            source = chunk.metadata.get("metadata", {}).get("filename", f"مصدر {i}")
-            # ✅ اقتصاص النص إلى 500 حرف كحد أقصى لكل قطعة
-            text_content = chunk.text
-            if len(text_content) > 500:
-                text_content = text_content[:500] + "..."
-            context_parts.append(f"[{i}] {source}:")
-            context_parts.append(text_content)
-            context_parts.append("")
-        
-        return "\n".join(context_parts)
+        return reranked
     
     # ============================================================
-    # طرق حساب الثقة
+    # طرق حساب الدرجات الإضافية
     # ============================================================
     
-    def _calculate_confidence(
-        self,
-        documents: List[Dict[str, Any]],
-        answer_length: int,
-        chunks_used: int
-    ) -> float:
+    def _calculate_recency_score(self, doc: Dict[str, Any]) -> float:
         """
-        حساب درجة الثقة في الإجابة
+        حساب درجة الحداثة
         
         Args:
-            documents: المستندات المستخدمة
-            answer_length: طول الإجابة
-            chunks_used: عدد القطع المستخدمة
+            doc: المستند
             
         Returns:
-            درجة الثقة (0-1)
+            درجة الحداثة (0-1)
         """
-        if not documents:
-            return 0.0
+        metadata = doc.get("metadata", {})
         
-        # 1. متوسط درجة المطابقة
-        avg_relevance = sum(
-            doc.get("relevance_score", 0.0) for doc in documents
-        ) / len(documents)
+        # محاولة استخراج التاريخ
+        date_str = metadata.get("date_added") or metadata.get("modified_at")
         
-        # 2. عدد المستندات المستخدمة
-        doc_score = min(chunks_used / 5, 1.0)  # 5 مستندات كحد أقصى للثقة
+        if not date_str:
+            return 0.5  # قيمة افتراضية
         
-        # 3. طول الإجابة
-        length_score = min(answer_length / 200, 1.0)  # 200 حرف كحد أقصى
+        try:
+            # محاولة تحويل التاريخ
+            from datetime import datetime
+            if isinstance(date_str, str):
+                # محاولة تنسيقات مختلفة
+                formats = [
+                    "%Y-%m-%d",
+                    "%Y-%m-%dT%H:%M:%S",
+                    "%Y-%m-%d %H:%M:%S",
+                    "%d/%m/%Y"
+                ]
+                
+                for fmt in formats:
+                    try:
+                        doc_date = datetime.strptime(date_str, fmt)
+                        break
+                    except ValueError:
+                        continue
+                else:
+                    return 0.5
+                
+                # حساب الفرق بالأيام
+                now = datetime.now()
+                days_diff = (now - doc_date).days
+                
+                # تحويل إلى درجة (كلما كان أحدث، كلما كانت الدرجة أعلى)
+                if days_diff <= 30:
+                    return 1.0
+                elif days_diff <= 90:
+                    return 0.8
+                elif days_diff <= 180:
+                    return 0.6
+                elif days_diff <= 365:
+                    return 0.4
+                else:
+                    return 0.2
+                    
+        except Exception:
+            return 0.5
         
-        # 4. وجود مستندات
-        has_docs_score = 1.0 if chunks_used > 0 else 0.0
+        return 0.5
+    
+    def _calculate_popularity_score(self, doc: Dict[str, Any]) -> float:
+        """
+        حساب درجة الشعبية (عدد الاستعلامات السابقة)
         
-        # الوزن النهائي
-        confidence = (
-            avg_relevance * 0.5 +      # 50% من درجة المطابقة
-            doc_score * 0.2 +          # 20% من عدد المستندات
-            length_score * 0.2 +       # 20% من طول الإجابة
-            has_docs_score * 0.1       # 10% من وجود مستندات
+        Args:
+            doc: المستند
+            
+        Returns:
+            درجة الشعبية (0-1)
+        """
+        metadata = doc.get("metadata", {})
+        
+        # عدد مرات الاستعلام
+        query_count = metadata.get("query_count", 0)
+        
+        if query_count <= 0:
+            return 0.3
+        
+        # تحويل إلى درجة (كلما زادت الاستعلامات، زادت الدرجة)
+        if query_count >= 100:
+            return 1.0
+        elif query_count >= 50:
+            return 0.8
+        elif query_count >= 20:
+            return 0.6
+        elif query_count >= 5:
+            return 0.4
+        else:
+            return 0.3
+    
+    def _calculate_quality_score(self, doc: Dict[str, Any]) -> float:
+        """
+        حساب درجة الجودة
+        
+        Args:
+            doc: المستند
+            
+        Returns:
+            درجة الجودة (0-1)
+        """
+        metadata = doc.get("metadata", {})
+        
+        # 1. جودة النص (طول النص)
+        text = doc.get("text", "")
+        text_length = len(text)
+        
+        if text_length >= 1000:
+            length_score = 1.0
+        elif text_length >= 500:
+            length_score = 0.8
+        elif text_length >= 200:
+            length_score = 0.5
+        else:
+            length_score = 0.3
+        
+        # 2. وجود بيانات وصفية كاملة
+        metadata_score = 0.0
+        required_fields = ["filename", "category"]
+        for field in required_fields:
+            if field in metadata and metadata[field]:
+                metadata_score += 0.5
+        
+        # 3. درجة الجودة من التقرير (إذا كانت موجودة)
+        quality_score = metadata.get("quality_score", 0)
+        if isinstance(quality_score, (int, float)):
+            quality_score = quality_score / 100  # تطبيع
+        else:
+            quality_score = 0.5
+        
+        # 4. دمج الدرجات
+        combined = (
+            length_score * 0.4 +
+            metadata_score * 0.3 +
+            quality_score * 0.3
         )
         
-        return min(max(confidence, 0.0), 1.0)
-    
-    # ============================================================
-    # طرق تحسين الأسئلة
-    # ============================================================
-    
-    def _enhance_question(self, question: str) -> str:
-        """
-        تحسين السؤال لتحسين جودة الاسترجاع
-        
-        Args:
-            question: السؤال الأصلي
-            
-        Returns:
-            السؤال المحسن
-        """
-        # إزالة علامات الترقيم الزائدة
-        question = question.strip()
-        
-        # إذا كان السؤال قصيراً، حاول توسيعه
-        if len(question.split()) < 3:
-            # إضافة كلمات مفتاحية عامة
-            question = f"{question} معلومات تفاصيل"
-        
-        return question
-    
-    def _extract_keywords(self, question: str) -> List[str]:
-        """
-        استخراج الكلمات المفتاحية من السؤال
-        
-        Args:
-            question: السؤال
-            
-        Returns:
-            قائمة الكلمات المفتاحية
-        """
-        # كلمات شائعة في المشتريات
-        procurement_keywords = [
-            "عقد", "مورد", "توريد", "شراء", "طلب", "فاتورة",
-            "جودة", "تقييم", "سعر", "تكلفة", "ميزانية",
-            "شروط", "بنود", "التزام", "ضمان", "تسليم",
-            "منتج", "خدمة", "مواد", "معدات", "تخزين"
-        ]
-        
-        words = question.split()
-        keywords = []
-        
-        for word in words:
-            # إزالة علامات الترقيم
-            clean_word = word.strip("،؛؟!.،")
-            if clean_word in procurement_keywords:
-                keywords.append(clean_word)
-        
-        return keywords
-    
-    # ============================================================
-    # طرق تنسيق النتائج
-    # ============================================================
-    
-    def _format_sources(self, documents: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        تنسيق المصادر للعرض
-        
-        Args:
-            documents: قائمة المستندات
-            
-        Returns:
-            قائمة المصادر المنسقة
-        """
-        sources = []
-        
-        for doc in documents:
-            metadata = doc.get("metadata", {})
-            
-            # ✅ اقتصاص المحتوى للمصادر أيضاً
-            content = doc.get("text", "")
-            if len(content) > 300:
-                content = content[:300] + "..."
-            
-            source = {
-                "id": doc.get("id", ""),
-                "filename": metadata.get("filename", "مصدر غير معروف"),
-                "category": metadata.get("category", "غير مصنف"),
-                "content": content,
-                "relevance_score": doc.get("relevance_score", 0.0),
-                "preview": self._get_preview(doc.get("text", ""))
-            }
-            
-            sources.append(source)
-        
-        return sources
-    
-    def _get_preview(self, text: str, max_length: int = 200) -> str:
-        """
-        الحصول على معاينة للنص
-        
-        Args:
-            text: النص الكامل
-            max_length: الحد الأقصى لطول المعاينة
-            
-        Returns:
-            معاينة النص
-        """
-        if not text:
-            return ""
-        
-        if len(text) <= max_length:
-            return text
-        
-        # قطع عند أقرب مسافة
-        preview = text[:max_length]
-        last_space = preview.rfind(' ')
-        
-        if last_space > 0:
-            preview = preview[:last_space]
-        
-        return preview + "..."
-    
-    # ============================================================
-    # ✅ طرق جديدة للكشف عن الأسئلة العامة
-    # ============================================================
-    
-    def _is_general_question(self, question: str) -> bool:
-        """
-        التحقق مما إذا كان السؤال عاماً (لا يحتاج إلى استرجاع مستندات)
-        
-        Args:
-            question: السؤال
-            
-        Returns:
-            True إذا كان السؤال عاماً، False إذا كان يحتاج إلى مستندات
-        """
-        question_lower = question.lower().strip()
-        
-        # قائمة الكلمات والعبارات التي تشير إلى أسئلة عامة
-        general_patterns = [
-            "السلام عليكم",
-            "وعليكم السلام",
-            "صباح الخير",
-            "مساء الخير",
-            "مرحبا",
-            "اهلا",
-            "كيف حالك",
-            "شكرا",
-            "thank you",
-            "hello",
-            "hi",
-            "good morning",
-            "good evening",
-            "how are you",
-            "مع السلامة",
-            "باي",
-            "bye"
-        ]
-        
-        # التحقق من تطابق السؤال مع أي من الأنماط العامة
-        for pattern in general_patterns:
-            if pattern in question_lower:
-                return True
-        
-        # إذا كان السؤال قصيراً جداً (أقل من 3 كلمات) ولا يحتوي على كلمات مفتاحية
-        if len(question.split()) <= 2:
-            # التحقق مما إذا كانت الكلمات مفتاحية للمشتريات
-            keywords = self._extract_keywords(question)
-            if len(keywords) == 0:
-                return True
-        
-        return False
-    
-    def _get_general_system_prompt(self) -> str:
-        """
-        الحصول على توجيه النظام للأسئلة العامة
-        
-        Returns:
-            توجيه النظام للأسئلة العامة
-        """
-        return """أنت مساعد ذكي ومحترم.
-المستخدم يوجه لك تحية أو سؤالاً عاماً.
-التعليمات:
-1. رد بتحية مناسبة ومهذبة
-2. استخدم اللغة العربية الفصحى
-3. كن ودوداً ومحترماً
-4. ذكر المستخدم بأنك هنا لمساعدته في أسئلة المشتريات والعقود والموردين
-5. اقترح عليه طرح سؤال محدد عن المستندات المتاحة
-"""
+        return min(max(combined, 0.0), 1.0)
     
     # ============================================================
     # طرق مساعدة
     # ============================================================
     
+    def _get_relevance_label(self, score: float) -> str:
+        """
+        الحصول على تسمية الأهمية بناءً على الدرجة
+        
+        Args:
+            score: درجة الأهمية
+            
+        Returns:
+            تسمية الأهمية (high, medium, low)
+        """
+        if score >= 0.7:
+            return "high"
+        elif score >= 0.4:
+            return "medium"
+        else:
+            return "low"
+    
+    def _update_stats(self, count: int, elapsed: float) -> None:
+        """
+        تحديث الإحصائيات
+        
+        Args:
+            count: عدد المستندات
+            elapsed: زمن المعالجة
+        """
+        self.stats["total_reranked"] += count
+        self.stats["last_rerank_time"] = elapsed
+        
+        # تحديث المتوسط
+        total = self.stats["total_reranked"]
+        if total > 0:
+            self.stats["avg_rerank_time"] = (
+                (self.stats["avg_rerank_time"] * (total - count) +
+                 elapsed * count) / total
+            )
+    
     def get_stats(self) -> Dict[str, Any]:
         """
-        الحصول على إحصائيات المحرك
+        الحصول على إحصائيات إعادة الترتيب
         
         Returns:
-            إحصائيات المحرك
+            إحصائيات إعادة الترتيب
         """
         return {
-            "retriever_stats": self.retriever.get_stats(),
-            "reranker_stats": self.reranker.get_stats(),
-            "default_top_k": self.default_top_k,
-            "default_max_sources": self.default_max_sources,
-            "min_confidence": self.min_confidence
+            **self.stats,
+            "model_name": self.model_name,
+            "use_cross_encoder": self.use_cross_encoder,
+            "weights": self.weights
         }
     
     def reset(self) -> None:
         """
-        إعادة تعيين المحرك
+        إعادة تعيين الإحصائيات
         """
-        self.retriever.reset()
-        self.reranker.reset()
-        logger.info("🔄 QA Engine reset")
+        self.stats = {
+            "total_reranked": 0,
+            "avg_rerank_time": 0,
+            "last_rerank_time": 0
+        }
+        logger.info("🔄 Reranker stats reset")
+    
+    # ============================================================
+    # طرق إضافية
+    # ============================================================
+    
+    async def rerank_by_metadata(
+        self,
+        documents: List[Dict[str, Any]],
+        sort_by: str = "relevance",
+        ascending: bool = False
+    ) -> List[Dict[str, Any]]:
+        """
+        إعادة ترتيب المستندات حسب البيانات الوصفية
+        
+        Args:
+            documents: قائمة المستندات
+            sort_by: حقل الترتيب
+            ascending: ترتيب تصاعدي
+            
+        Returns:
+            قائمة المستندات المرتبة
+        """
+        if not documents:
+            return []
+        
+        # استخراج القيم
+        def get_value(doc):
+            if sort_by in doc:
+                return doc[sort_by]
+            elif sort_by in doc.get("metadata", {}):
+                return doc["metadata"][sort_by]
+            else:
+                return 0
+        
+        # ترتيب
+        result = sorted(documents, key=get_value, reverse=not ascending)
+        
+        # إضافة الترتيب
+        for i, doc in enumerate(result, 1):
+            doc["rank"] = i
+        
+        return result
+    
+    async def filter_by_threshold(
+        self,
+        documents: List[Dict[str, Any]],
+        threshold: float = 0.3
+    ) -> List[Dict[str, Any]]:
+        """
+        تصفية المستندات حسب درجة الأهمية
+        
+        Args:
+            documents: قائمة المستندات
+            threshold: الحد الأدنى للقبول
+            
+        Returns:
+            قائمة المستندات المقبولة
+        """
+        if not documents:
+            return []
+        
+        return [
+            doc for doc in documents
+            if doc.get("combined_score", doc.get("relevance_score", 0)) >= threshold
+        ]
+    
+    def get_top_k_by_category(
+        self,
+        documents: List[Dict[str, Any]],
+        category: str,
+        top_k: int = 3
+    ) -> List[Dict[str, Any]]:
+        """
+        الحصول على أفضل النتائج من تصنيف معين
+        
+        Args:
+            documents: قائمة المستندات
+            category: التصنيف المطلوب
+            top_k: عدد النتائج
+            
+        Returns:
+            قائمة المستندات من التصنيف المطلوب
+        """
+        # تصفية حسب التصنيف
+        filtered = []
+        for doc in documents:
+            doc_category = doc.get("metadata", {}).get("category", "")
+            if doc_category == category:
+                filtered.append(doc)
+        
+        # ترتيب حسب الدرجة
+        filtered.sort(key=lambda x: x.get("combined_score", x.get("relevance_score", 0)), reverse=True)
+        
+        return filtered[:top_k]
