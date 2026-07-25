@@ -26,8 +26,8 @@ def clean_metadata(metadata: dict) -> dict:
     تنظيف البيانات الوصفية لتكون متوافقة مع Chroma
     
     Chroma يقبل فقط:
-    - str, int, float, bool, None
-    - القيم الأخرى يتم تحويلها إلى str
+    - str, int, float, bool
+    - لا يقبل: None, list, dict, set, tuple
     
     Args:
         metadata: البيانات الوصفية غير النظيفة
@@ -37,29 +37,65 @@ def clean_metadata(metadata: dict) -> dict:
     """
     cleaned = {}
     for key, value in metadata.items():
-        # تخطي القيم الفارغة أو غير المفيدة
+        # تخطي المفاتيح الفارغة
+        if not key:
+            continue
+            
+        # ============================================================
+        # 1. معالجة القيم الفارغة (None)
+        # ============================================================
         if value is None:
-            cleaned[key] = None
-        elif isinstance(value, (str, int, float, bool)):
+            cleaned[key] = "unknown"
+            continue
+        
+        # ============================================================
+        # 2. معالجة الأنواع الأساسية المدعومة
+        # ============================================================
+        if isinstance(value, (str, int, float, bool)):
             cleaned[key] = value
-        elif isinstance(value, (list, tuple, set)):
-            # تحويل المجموعات إلى قائمة من السلاسل
+            continue
+        
+        # ============================================================
+        # 3. معالجة القوائم والمجموعات
+        # ============================================================
+        if isinstance(value, (list, tuple, set)):
+            # تحويل إلى نص مفصول بفواصل
             try:
-                cleaned[key] = str(list(value))
+                # استخراج القيم النصية فقط
+                str_values = [str(v) for v in value if v is not None]
+                if str_values:
+                    cleaned[key] = ", ".join(str_values)
+                else:
+                    cleaned[key] = "empty_list"
             except:
                 cleaned[key] = str(value)
-        elif isinstance(value, dict):
-            # تحويل القواميس إلى سلاسل
+            continue
+        
+        # ============================================================
+        # 4. معالجة القواميس (dict)
+        # ============================================================
+        if isinstance(value, dict):
+            # تحويل القاموس إلى نص key=value, key2=value2
             try:
-                cleaned[key] = str(value)
+                items = []
+                for k, v in value.items():
+                    if v is not None:
+                        items.append(f"{k}={v}")
+                if items:
+                    cleaned[key] = "; ".join(items)
+                else:
+                    cleaned[key] = "empty_dict"
             except:
                 cleaned[key] = str(value)
-        else:
-            # أي نوع آخر يتم تحويله إلى سلسلة
-            try:
-                cleaned[key] = str(value)
-            except:
-                cleaned[key] = None
+            continue
+        
+        # ============================================================
+        # 5. أي نوع آخر - تحويل إلى نص
+        # ============================================================
+        try:
+            cleaned[key] = str(value)
+        except:
+            cleaned[key] = "unknown_type"
     
     return cleaned
 
