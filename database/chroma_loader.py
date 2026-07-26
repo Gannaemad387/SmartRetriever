@@ -223,6 +223,17 @@ class ChromaLoader:
             where_filter["supplier"] = filter_supplier
         
         try:
+            # ✅ التأكد من وجود المجموعة بشكل صحيح
+            try:
+                self.collection = self.client.get_collection(name=self.collection_name)
+            except Exception:
+                logger.warning(f"⚠️ Collection '{self.collection_name}' not found, creating...")
+                self.collection = self.client.create_collection(
+                    name=self.collection_name,
+                    embedding_function=self.embedding_fn,
+                    metadata={"hnsw:space": "cosine"}
+                )
+            
             # ✅ التحقق من وجود مستندات
             if self.collection.count() == 0:
                 logger.warning("⚠️ Collection is empty")
