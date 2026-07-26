@@ -10,15 +10,23 @@ primaryColor = "#E0218A"              # اللون الأساسي (Hot Barbie Pi
 backgroundColor = "#FCE4EC"           # لون الخلفية (Soft Pastel Pink)
 secondaryBackgroundColor = "#FFFFFF"  # لون الخلفية الثانوي (Pure White) - للبطاقات والسايدبار
 textColor = "#4A0E2E"                 # لون النص (Deep Burgundy)
-
 # ✅ إعدادات الخطوط
 font = "sans serif"                   # نوع الخط
 
-# ✅ تخصيص الألوان الإضافية
-[theme.custom]
-headerColor = "#4A0E2E"               # ✅ لون العناوين الرئيسية (Deep Burgundy)
-subheaderColor = "#C2185B"            # ✅ لون العناوين الفرعية (Deep Magenta)
-linkColor = "#E0218A"                 # ✅ لون الروابط (Hot Barbie Pink)
+# ملحوظة: قسم [theme.custom] اتشال من هنا لإنه مش قسم معترف بيه في
+# إعدادات Streamlit الرسمية (المفاتيح المدعومة تحت [theme] هي بس
+# primaryColor, backgroundColor, secondaryBackgroundColor, textColor, font).
+# التحكم الفعلي في ألوان العناوين والروابط بيتم عن طريق styles/custom.css
+# و components/sidebar.py.
+
+# ============================================================
+# 🧭 إعدادات الواجهة (Client)
+# ============================================================
+[client]
+# إيقاف قائمة التنقل التلقائية بتاعة Streamlit لصفحات pages/
+# عشان نستخدم بس القائمة المخصصة في components/sidebar.py
+# (بدون ده كانت القائمتين بتظهروا مع بعض فوق وتحت في الـ Sidebar)
+showSidebarNavigation = false
 
 # ============================================================
 # 🖥️ إعدادات الخادم (Server)
