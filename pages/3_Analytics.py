@@ -14,6 +14,13 @@ from pathlib import Path
 from datetime import datetime
 import re
 
+# إعداد الشاشة العريضة للصفحة (يُفضل وضعها في البداية)
+st.set_page_config(
+    page_title="📊 التحليلات والإحصائيات | Analytics",
+    page_icon="📊",
+    layout="wide"
+)
+
 # إضافة المجلد الرئيسي إلى مسار النظام
 sys.path.append(str(Path(__file__).parent.parent))
 
@@ -99,9 +106,10 @@ def update_chart_theme(fig, is_dark: bool):
 
 
 # ============================================================
-# 1. دوال استخراج واستعلام البيانات
+# 1. دوال استخراج واستعلام البيانات (مزودة بـ Caching)
 # ============================================================
 
+@st.cache_data(ttl=60)
 def get_documents_stats():
     """الحصول على إحصائيات المستندات والمجلدات"""
     kb_path = settings.KNOWLEDGE_BASE_PATH
@@ -124,11 +132,12 @@ def get_documents_stats():
                     count += 1
                     ext = file_path.suffix.lower()
                     stats["file_types"][ext] = stats["file_types"].get(ext, 0) + 1
-                    stats["total_size"] += file_path.stat().st_size
+                    file_size = file_path.stat().st_size
+                    stats["total_size"] += file_size
                     stats["documents"].append({
                         "filename": file_path.name,
                         "category": category_dir.name,
-                        "size": file_path.stat().st_size,
+                        "size": file_size,
                         "modified": datetime.fromtimestamp(file_path.stat().st_mtime)
                     })
             stats["by_category"][category_dir.name] = count
@@ -176,11 +185,12 @@ def get_quality_scores(documents):
     scores = []
     for doc in documents:
         if "quality" in doc["category"].lower() or "quality" in doc["filename"].lower():
-            match = re.search(r'(\d+)', doc["filename"])
+            # البحث عن درجات محددة بنسبة مئوية أو رقم بين 0 و 100
+            match = re.search(r'quality.*?(\d{1,3})', doc["filename"], re.IGNORECASE) or re.search(r'(\d{1,3})%', doc["filename"])
             if match:
                 score = int(match.group(1))
                 if score <= 100:
-                    supplier_name = doc["filename"].replace('_Quality_Report_', '').replace('.docx', '')
+                    supplier_name = doc["filename"].replace('_Quality_Report_', '').replace('.docx', '').replace('.pdf', '')
                     supplier_name = re.sub(r'^\d+_', '', supplier_name)
                     scores.append({
                         "supplier": supplier_name,
@@ -195,19 +205,19 @@ def get_contract_values(documents):
     contracts = []
     for doc in documents:
         if "contract" in doc["category"].lower() or "contract" in doc["filename"].lower():
-            match = re.search(r'(\d+[,\d]*\.?\d*)', doc["filename"])
+            # استخراج القيم المالية مع تحسين عدم التباسها بالتواريخ (مثل 2024 أو 2025)
+            match = re.search(r'(?:val|amount|cost|contract)?_?(\d{1,3}(?:,\d{3})+|\d{5,})\b', doc["filename"], re.IGNORECASE)
             if match:
                 try:
                     value_str = match.group(1).replace(',', '')
                     value = float(value_str)
-                    if value > 1000:
-                        supplier_name = doc["filename"].replace('_Supplier_Contract_', '').replace('.docx', '')
-                        supplier_name = re.sub(r'^\d+_', '', supplier_name)
-                        contracts.append({
-                            "supplier": supplier_name,
-                            "value": value,
-                            "category": doc["category"]
-                        })
+                    supplier_name = doc["filename"].replace('_Supplier_Contract_', '').replace('.docx', '').replace('.pdf', '')
+                    supplier_name = re.sub(r'^\d+_', '', supplier_name)
+                    contracts.append({
+                        "supplier": supplier_name,
+                        "value": value,
+                        "category": doc["category"]
+                    })
                 except Exception:
                     pass
     return contracts
@@ -238,6 +248,15 @@ def show():
     lang_code = render_sidebar(stats=sidebar_stats)
     T = TRANSLATIONS.get(lang_code, TRANSLATIONS["ar"])
     
+    # ضبط اتجاه الواجهة عند اختيار العربية
+    if lang_code == "ar":
+        st.markdown("""
+            <style>
+                .stApp { direction: rtl; text-align: right; }
+                .stMetric { text-align: right; }
+            </style>
+        """, unsafe_allow_html=True)
+
     # 3. تحديد هل التطبيق في الوضع الداكن؟
     is_dark = st.session_state.get("dark_mode", True)
 
