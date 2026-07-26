@@ -12,7 +12,6 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from components.sidebar import render_sidebar
-from services.chat_service import ChatService
 from components.chat_utils import render_sources, render_error
 from core.config import settings
 from utils.logger import logger
@@ -29,37 +28,25 @@ st.set_page_config(
 
 
 # ============================================================
-# 🎨 تحميل التنسيقات المخصصة (CSS) - Barbie Palette 💖
+# 🎨 تحميل التنسيقات المخصصة (CSS)
 # ============================================================
 def load_css():
-    """تحميل تنسيقات الواجهة الخاصة بصفحة المحادثة"""
     st.markdown("""
         <style>
-        /* تحسين صندوق المحادثة */
         .stChatMessage {
             border-radius: 12px !important;
             padding: 1rem !important;
             margin-bottom: 0.8rem !important;
             border: 1px solid rgba(255, 255, 255, 0.05) !important;
         }
-
-        /* هيدر الصفحة - نفس كلاس .chat-header اللي بيتلون من apply_dynamic_theme
-           في sidebar.py، فبيستجيب تلقائي لتبديل الثيم */
         .chat-header {
             border-radius: 14px;
             padding: 1.2rem 1.5rem;
             margin-bottom: 1.5rem;
         }
-        .chat-header h2 {
-            font-weight: 800;
-            margin: 0 0 6px 0;
-        }
-        .chat-header p {
-            font-size: 0.88rem;
-            margin: 0;
-        }
+        .chat-header h2 { font-weight: 800; margin: 0 0 6px 0; }
+        .chat-header p  { font-size: 0.88rem; margin: 0; }
 
-        /* أزرار الأسئلة المقترحة */
         div[data-testid="stColumn"] div.stButton > button {
             background: #3D0F24 !important;
             border: 1px solid rgba(224, 33, 138, 0.2) !important;
@@ -70,7 +57,6 @@ def load_css():
             text-align: right !important;
             transition: all 0.2s ease !important;
         }
-
         div[data-testid="stColumn"] div.stButton > button:hover {
             border-color: #E0218A !important;
             color: #E0218A !important;
@@ -87,12 +73,40 @@ def load_css():
 
 
 # ============================================================
-# 1. تهيئة خدمة المحادثة
+# ✅ Singleton للـ ChromaLoader — نفس الـ instance في كل الـ app
+# ============================================================
+@st.cache_resource
+def get_chroma_loader():
+    from database.chroma_loader import ChromaLoader
+    return ChromaLoader()
+
+
+# ============================================================
+# 1. تهيئة خدمة المحادثة — تستخدم نفس الـ ChromaLoader
 # ============================================================
 @st.cache_resource
 def get_chat_service():
-    """تهيئة خدمة المحادثة (مرة واحدة)"""
-    return ChatService()
+    from database.embeddings import Embeddings
+    from rag.retriever import Retriever
+    from rag.reranker import Reranker
+    from llm.groq_client import GroqClient
+    from rag.qa_engine import QAEngine
+    from services.chat_service import ChatService
+
+    # ✅ نفس الـ singleton — مش instance جديدة
+    chroma_loader = get_chroma_loader()
+
+    embeddings = Embeddings(
+        model_name=settings.EMBEDDING_MODEL,
+        device=settings.EMBEDDING_DEVICE
+    )
+    retriever = Retriever(chroma_loader=chroma_loader, embeddings=embeddings)
+    reranker = Reranker()
+    llm = GroqClient()
+    qa_engine = QAEngine(retriever=retriever, reranker=reranker, llm=llm)
+
+    return ChatService(qa_engine=qa_engine)
+
 
 chat_service = get_chat_service()
 
@@ -113,7 +127,6 @@ def init_session_state():
 # 3. عرض سوابق المحادثة
 # ============================================================
 def display_messages():
-    """عرض كافة الرسائل السابقة والمصادر"""
     for message in st.session_state.messages:
         role = message.get("role", "user")
         content = message.get("content", "")
@@ -121,7 +134,6 @@ def display_messages():
 
         with st.chat_message(role):
             st.markdown(content)
-
             if sources and role == "assistant":
                 render_sources(sources)
 
@@ -130,7 +142,6 @@ def display_messages():
 # 4. معالجة سؤال المستخدم
 # ============================================================
 def process_question(question: str):
-    """معالجة السؤال واستدعاء الخدمة مع حفظ النتيجة"""
     if not question.strip():
         return
 
@@ -166,7 +177,6 @@ def process_question(question: str):
                 error_msg = f"❌ حدث خطأ أثناء معالجة الطلب: {str(e)}"
                 st.error(error_msg)
                 logger.error(f"Chat error: {str(e)}")
-
                 st.session_state.messages.append({
                     "role": "assistant",
                     "content": error_msg,
@@ -178,7 +188,6 @@ def process_question(question: str):
 # 5. عرض الأسئلة المقترحة
 # ============================================================
 def display_suggested_questions():
-    """عرض اقتراحات الأسئلة فقط عند بداية المحادثة"""
     if len(st.session_state.messages) > 0:
         return
 
@@ -206,18 +215,15 @@ def display_suggested_questions():
 # 6. الصفحة الرئيسية للمحادثة
 # ============================================================
 def show():
-    """عرض الواجهة الكلية لصفحة المحادثة"""
     load_css()
     init_session_state()
 
-    # ✅ 1. عرض السايدبار (بيتكفل بالثيم، إخفاء الـ nav التلقائي، واللغة والتنقل)
     render_sidebar(
         show_theme_toggle=True,
         show_stats=False,
         show_navigation=True
     )
 
-    # ✅ 2. الهيدر والتحكم العلوي
     col_title, col_actions = st.columns([3, 1.5])
 
     with col_title:
@@ -242,16 +248,13 @@ def show():
 
     st.markdown("---")
 
-    # ✅ 3. عرض سجل الرسائل
     display_messages()
 
-    # ✅ 4. معالجة الأسئلة المجهزة أو المدخلة من مربع النص
     query_to_process = None
 
     if st.session_state.pending_question:
         query_to_process = st.session_state.pending_question
         st.session_state.pending_question = None
-
     elif prompt := st.chat_input("اكتب سؤالك هنا عن المستندات أو العقود..."):
         query_to_process = prompt
 
@@ -259,7 +262,6 @@ def show():
         process_question(query_to_process)
         st.rerun()
 
-    # ✅ 5. عرض الأسئلة المقترحة (في حال لا توجد رسائل بعد)
     display_suggested_questions()
 
 
