@@ -1,4 +1,3 @@
-# app/pages/3_Analytics.py
 """
 📊 صفحة التحليلات والإحصائيات - Analytics Page
 
@@ -83,8 +82,8 @@ TRANSLATIONS = {
 # ============================================================
 def update_chart_theme(fig, is_dark: bool):
     """تعديل ألوان الرسم البياني من Plotly ليتناسب تلقائياً مع الثيم الحالي"""
-    font_color = "#F8FAFC" if is_dark else "#0F172A"
-    grid_color = "rgba(255, 255, 255, 0.1)" if is_dark else "#E2E8F0"
+    font_color = "#FCE4EC" if is_dark else "#4A0E2E"
+    grid_color = "rgba(224, 33, 138, 0.2)" if is_dark else "rgba(194, 24, 91, 0.15)"
     
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
@@ -214,11 +213,127 @@ def get_contract_values(documents):
 
 
 # ============================================================
+# 🎨 CSS مخصص لصفحة التحليلات (Barbie Colors)
+# ============================================================
+def load_analytics_css():
+    """تحميل تنسيقات Barbie Colors لصفحة التحليلات"""
+    st.markdown("""
+        <style>
+        /* 🚫 إخفاء قائمة التنقل الافتراضية */
+        [data-testid="stSidebarNav"] {
+            display: none !important;
+        }
+
+        /* 🎨 Barbie Colors */
+        :root {
+            --bg-primary: #FCE4EC;
+            --bg-secondary: #FFFFFF;
+            --primary: #E0218A;
+            --primary-dark: #C2185B;
+            --text-primary: #4A0E2E;
+            --text-secondary: #C2185B;
+            --shadow: rgba(224, 33, 138, 0.2);
+        }
+
+        /* خلفية التطبيق */
+        .stApp {
+            background-color: #FCE4EC !important;
+        }
+
+        /* الهيدر */
+        .doc-header {
+            background: linear-gradient(135deg, #FCE4EC 0%, #E0218A 100%) !important;
+            border: 2px solid #C2185B !important;
+            border-radius: 14px;
+            padding: 18px 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(224, 33, 138, 0.2);
+        }
+        .doc-header h2 {
+            color: #FFFFFF !important;
+            font-weight: 800;
+            font-size: 1.6rem;
+            margin: 0 0 6px 0;
+        }
+        .doc-header p {
+            color: #FFFFFF !important;
+            font-size: 0.9rem;
+            margin: 0;
+            opacity: 0.9;
+        }
+
+        /* بطاقات الإحصائيات */
+        div[data-testid="stMetric"] {
+            background: #FFFFFF !important;
+            border: 2px solid #E0218A !important;
+            border-radius: 12px !important;
+            padding: 12px !important;
+            box-shadow: 0 2px 10px rgba(224, 33, 138, 0.08);
+        }
+        div[data-testid="stMetricValue"] {
+            color: #E0218A !important;
+        }
+        div[data-testid="stMetricLabel"] {
+            color: #4A0E2E !important;
+        }
+
+        /* النصوص */
+        h1, h2, h3, h4, h5, h6, p, span, label, div {
+            color: #4A0E2E !important;
+        }
+        .stSubheader {
+            color: #E0218A !important;
+        }
+
+        /* DataFrames */
+        .stDataFrame {
+            border: 2px solid #E0218A !important;
+            border-radius: 12px !important;
+            overflow: hidden;
+        }
+        .stDataFrame thead {
+            background: #E0218A !important;
+            color: #FFFFFF !important;
+        }
+
+        /* التوسعات */
+        .stExpander {
+            background: #FFFFFF !important;
+            border: 2px solid #E0218A !important;
+            border-radius: 12px !important;
+            box-shadow: 0 2px 10px rgba(224, 33, 138, 0.08);
+        }
+
+        /* المقسّم */
+        hr {
+            border-color: #E0218A !important;
+            opacity: 0.3;
+        }
+
+        /* صناديق المعلومات */
+        .stAlert {
+            border-radius: 12px !important;
+            border: 2px solid #E0218A !important;
+        }
+
+        /* الكود */
+        .stCodeBlock {
+            border: 2px solid #E0218A !important;
+            border-radius: 8px !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+
+# ============================================================
 # 2. عرض واجهة الصفحة (Show Page)
 # ============================================================
 
 def show():
     """عرض صفحة التحليلات مع التوافق التام مع الثيم الفاتح والداكن"""
+    
+    # تحميل CSS الخاص بالصفحة
+    load_analytics_css()
     
     # 1. جلب البيانات الأساسية أولاً
     stats = get_documents_stats()
@@ -239,13 +354,13 @@ def show():
     T = TRANSLATIONS.get(lang_code, TRANSLATIONS["ar"])
     
     # 3. تحديد هل التطبيق في الوضع الداكن؟
-    is_dark = st.session_state.get("dark_mode", True)
+    is_dark = st.session_state.get("dark_mode", False)
 
-    # 4. الترويسة الرئيسية المحسنة
+    # 4. الترويسة الرئيسية
     st.markdown(f"""
-    <div class="doc-header" style="padding: 18px 24px; border-radius: 12px; margin-bottom: 20px;">
-        <h2 style="margin: 0 0 6px 0; font-weight: 800; font-size: 1.6rem;">{T['title']}</h2>
-        <p style="margin: 0; font-size: 0.9rem; opacity: 0.85;">{T['subtitle']}</p>
+    <div class="doc-header">
+        <h2>{T['title']}</h2>
+        <p>{T['subtitle']}</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -282,7 +397,7 @@ def show():
             names="التصنيف",
             values="العدد",
             title=f"<b>{T['cat_dist']}</b>",
-            color_discrete_sequence=px.colors.qualitative.Pastel if is_dark else px.colors.qualitative.Set2,
+            color_discrete_sequence=["#E0218A", "#C2185B", "#F8BBD0", "#4A0E2E", "#FCE4EC"],
             hole=0.4
         )
         fig1 = update_chart_theme(fig1, is_dark)
@@ -305,7 +420,7 @@ def show():
                 x="نوع الملف",
                 y="العدد",
                 title=f"<b>{T['file_types']}</b>",
-                color_discrete_sequence=["#38BDF8" if is_dark else "#0284C7"]
+                color_discrete_sequence=["#E0218A"]
             )
             fig2 = update_chart_theme(fig2, is_dark)
             fig2.update_layout(height=320)
@@ -320,7 +435,7 @@ def show():
                     x="الحجم (KB)",
                     title=f"<b>{T['size_dist']}</b>",
                     nbins=10,
-                    color_discrete_sequence=["#34D399" if is_dark else "#10B981"]
+                    color_discrete_sequence=["#C2185B"]
                 )
                 fig3 = update_chart_theme(fig3, is_dark)
                 fig3.update_layout(height=320)
@@ -355,7 +470,7 @@ def show():
             x="المورد",
             y="المستندات",
             title=f"<b>{T['docs_per_supplier']}</b>",
-            color_discrete_sequence=["#A78BFA" if is_dark else "#7C3AED"]
+            color_discrete_sequence=["#E0218A"]
         )
         fig4 = update_chart_theme(fig4, is_dark)
         fig4.update_layout(height=340)
@@ -393,7 +508,7 @@ def show():
             title=f"<b>{T['quality_scores_title']}</b>",
             labels={"supplier": "المورد", "score": "درجة الجودة (%)"},
             color="score",
-            color_continuous_scale="RdYlGn",
+            color_continuous_scale=["#FCE4EC", "#E0218A", "#C2185B"],
             range_color=[0, 100]
         )
         fig5 = update_chart_theme(fig5, is_dark)
@@ -424,7 +539,7 @@ def show():
             x="المورد",
             y="القيمة (SAR)",
             title=f"<b>{T['contract_values_title']}</b>",
-            color_discrete_sequence=["#FBBF24" if is_dark else "#D97706"]
+            color_discrete_sequence=["#E0218A"]
         )
         fig6 = update_chart_theme(fig6, is_dark)
         fig6.update_layout(height=340)
