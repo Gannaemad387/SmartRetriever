@@ -1,8 +1,9 @@
-# app/pages/3_Analytics.py
+# pages/3_Analytics.py
 """
 📊 صفحة التحليلات والإحصائيات - Analytics Page
 
 تعرض إحصائيات وتحليلات النظام والمستندات والموردين مع دعم الثيمين الفاتح والداكن
+💖 Barbie Color Palette
 """
 
 import streamlit as st
@@ -14,14 +15,6 @@ from pathlib import Path
 from datetime import datetime
 import re
 
-# إعداد الشاشة العريضة للصفحة (يُفضل وضعها في البداية)
-st.set_page_config(
-    page_title="📊 التحليلات والإحصائيات | Analytics",
-    page_icon="📊",
-    layout="wide"
-)
-
-# إضافة المجلد الرئيسي إلى مسار النظام
 sys.path.append(str(Path(__file__).parent.parent))
 
 from core.config import settings
@@ -86,13 +79,13 @@ TRANSLATIONS = {
 
 
 # ============================================================
-# 🎨 دالة ضبط ثيم الرسوم البيانية (Plotly Theme Adaptability)
+# 🎨 دالة ضبط ثيم الرسوم البيانية (Plotly Theme Adaptability) - Barbie
 # ============================================================
 def update_chart_theme(fig, is_dark: bool):
     """تعديل ألوان الرسم البياني من Plotly ليتناسب تلقائياً مع الثيم الحالي"""
-    font_color = "#F8FAFC" if is_dark else "#0F172A"
-    grid_color = "rgba(255, 255, 255, 0.1)" if is_dark else "#E2E8F0"
-    
+    font_color = "#FCE4EC" if is_dark else "#4A0E2E"
+    grid_color = "rgba(224, 33, 138, 0.15)" if is_dark else "#F8BBD0"
+
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
@@ -106,10 +99,9 @@ def update_chart_theme(fig, is_dark: bool):
 
 
 # ============================================================
-# 1. دوال استخراج واستعلام البيانات (مزودة بـ Caching)
+# 1. دوال استخراج واستعلام البيانات
 # ============================================================
 
-@st.cache_data(ttl=60)
 def get_documents_stats():
     """الحصول على إحصائيات المستندات والمجلدات"""
     kb_path = settings.KNOWLEDGE_BASE_PATH
@@ -120,10 +112,10 @@ def get_documents_stats():
         "total_size": 0,
         "documents": []
     }
-    
+
     if not kb_path.exists():
         return stats
-    
+
     for category_dir in kb_path.iterdir():
         if category_dir.is_dir():
             count = 0
@@ -132,17 +124,16 @@ def get_documents_stats():
                     count += 1
                     ext = file_path.suffix.lower()
                     stats["file_types"][ext] = stats["file_types"].get(ext, 0) + 1
-                    file_size = file_path.stat().st_size
-                    stats["total_size"] += file_size
+                    stats["total_size"] += file_path.stat().st_size
                     stats["documents"].append({
                         "filename": file_path.name,
                         "category": category_dir.name,
-                        "size": file_size,
+                        "size": file_path.stat().st_size,
                         "modified": datetime.fromtimestamp(file_path.stat().st_mtime)
                     })
             stats["by_category"][category_dir.name] = count
             stats["total"] += count
-    
+
     return stats
 
 
@@ -158,7 +149,7 @@ def get_suppliers_from_filenames(documents):
         r'([A-Za-z]+_Group)',
         r'([A-Za-z]+_Co)',
     ]
-    
+
     for doc in documents:
         filename = doc["filename"]
         for pattern in patterns:
@@ -176,7 +167,7 @@ def get_suppliers_from_filenames(documents):
                 suppliers[supplier]["categories"].add(doc["category"])
                 suppliers[supplier]["total_size"] += doc["size"]
                 break
-    
+
     return [{"name": k, **v} for k, v in suppliers.items()]
 
 
@@ -185,12 +176,11 @@ def get_quality_scores(documents):
     scores = []
     for doc in documents:
         if "quality" in doc["category"].lower() or "quality" in doc["filename"].lower():
-            # البحث عن درجات محددة بنسبة مئوية أو رقم بين 0 و 100
-            match = re.search(r'quality.*?(\d{1,3})', doc["filename"], re.IGNORECASE) or re.search(r'(\d{1,3})%', doc["filename"])
+            match = re.search(r'(\d+)', doc["filename"])
             if match:
                 score = int(match.group(1))
                 if score <= 100:
-                    supplier_name = doc["filename"].replace('_Quality_Report_', '').replace('.docx', '').replace('.pdf', '')
+                    supplier_name = doc["filename"].replace('_Quality_Report_', '').replace('.docx', '')
                     supplier_name = re.sub(r'^\d+_', '', supplier_name)
                     scores.append({
                         "supplier": supplier_name,
@@ -205,19 +195,19 @@ def get_contract_values(documents):
     contracts = []
     for doc in documents:
         if "contract" in doc["category"].lower() or "contract" in doc["filename"].lower():
-            # استخراج القيم المالية مع تحسين عدم التباسها بالتواريخ (مثل 2024 أو 2025)
-            match = re.search(r'(?:val|amount|cost|contract)?_?(\d{1,3}(?:,\d{3})+|\d{5,})\b', doc["filename"], re.IGNORECASE)
+            match = re.search(r'(\d+[,\d]*\.?\d*)', doc["filename"])
             if match:
                 try:
                     value_str = match.group(1).replace(',', '')
                     value = float(value_str)
-                    supplier_name = doc["filename"].replace('_Supplier_Contract_', '').replace('.docx', '').replace('.pdf', '')
-                    supplier_name = re.sub(r'^\d+_', '', supplier_name)
-                    contracts.append({
-                        "supplier": supplier_name,
-                        "value": value,
-                        "category": doc["category"]
-                    })
+                    if value > 1000:
+                        supplier_name = doc["filename"].replace('_Supplier_Contract_', '').replace('.docx', '')
+                        supplier_name = re.sub(r'^\d+_', '', supplier_name)
+                        contracts.append({
+                            "supplier": supplier_name,
+                            "value": value,
+                            "category": doc["category"]
+                        })
                 except Exception:
                     pass
     return contracts
@@ -229,16 +219,14 @@ def get_contract_values(documents):
 
 def show():
     """عرض صفحة التحليلات مع التوافق التام مع الثيم الفاتح والداكن"""
-    
-    # 1. جلب البيانات الأساسية أولاً
+
     stats = get_documents_stats()
     documents = stats["documents"]
     suppliers = get_suppliers_from_filenames(documents)
     quality_scores = get_quality_scores(documents)
-    
+
     avg_quality_val = round(sum(s["score"] for s in quality_scores) / len(quality_scores), 1) if quality_scores else 0
 
-    # 2. عرض الشريط الجانبي وجلب اللغة الثابتة
     sidebar_stats = {
         "documents": stats["total"],
         "suppliers": len(suppliers),
@@ -247,20 +235,10 @@ def show():
     }
     lang_code = render_sidebar(stats=sidebar_stats)
     T = TRANSLATIONS.get(lang_code, TRANSLATIONS["ar"])
-    
-    # ضبط اتجاه الواجهة عند اختيار العربية
-    if lang_code == "ar":
-        st.markdown("""
-            <style>
-                .stApp { direction: rtl; text-align: right; }
-                .stMetric { text-align: right; }
-            </style>
-        """, unsafe_allow_html=True)
 
-    # 3. تحديد هل التطبيق في الوضع الداكن؟
     is_dark = st.session_state.get("dark_mode", True)
 
-    # 4. الترويسة الرئيسية المحسنة
+    # الترويسة الرئيسية - بتاخد لونها من .doc-header المشتركة في sidebar.py
     st.markdown(f"""
     <div class="doc-header" style="padding: 18px 24px; border-radius: 12px; margin-bottom: 20px;">
         <h2 style="margin: 0 0 6px 0; font-weight: 800; font-size: 1.6rem;">{T['title']}</h2>
@@ -272,7 +250,7 @@ def show():
     # 5. كروت الإحصائيات الرئيسية (Metrics Cards)
     # ============================================================
     col1, col2, col3, col4 = st.columns(4)
-    
+
     with col1:
         st.metric(T["docs_total"], stats["total"], delta="+2" if stats["total"] > 0 else "0")
     with col2:
@@ -286,22 +264,25 @@ def show():
     st.markdown("---")
 
     # ============================================================
-    # 6. الرسوم البيانية المتوافقة مع الثيم
+    # 6. الرسوم البيانية المتوافقة مع الثيم - Barbie Palette
     # ============================================================
-    
+
     # 6.1 توزيع المستندات حسب التصنيف
     if stats["by_category"]:
         df_categories = pd.DataFrame({
             "التصنيف": list(stats["by_category"].keys()),
             "العدد": list(stats["by_category"].values())
         })
-        
+
+        # باليت Barbie لدائرة التوزيع (تدرجات وردي/ماجنتا/بورجندي)
+        barbie_pie_colors = ["#E0218A", "#C2185B", "#F48FB1", "#AD1457", "#F8BBD0", "#880E4F"]
+
         fig1 = px.pie(
             df_categories,
             names="التصنيف",
             values="العدد",
             title=f"<b>{T['cat_dist']}</b>",
-            color_discrete_sequence=px.colors.qualitative.Pastel if is_dark else px.colors.qualitative.Set2,
+            color_discrete_sequence=barbie_pie_colors,
             hole=0.4
         )
         fig1 = update_chart_theme(fig1, is_dark)
@@ -313,7 +294,7 @@ def show():
     # 6.2 أنواع الملفات وتوزيع الأحجام
     if stats["file_types"]:
         col_chart1, col_chart2 = st.columns(2)
-        
+
         with col_chart1:
             df_filetypes = pd.DataFrame({
                 "نوع الملف": list(stats["file_types"].keys()),
@@ -324,12 +305,12 @@ def show():
                 x="نوع الملف",
                 y="العدد",
                 title=f"<b>{T['file_types']}</b>",
-                color_discrete_sequence=["#38BDF8" if is_dark else "#0284C7"]
+                color_discrete_sequence=["#E0218A" if is_dark else "#C2185B"]
             )
             fig2 = update_chart_theme(fig2, is_dark)
             fig2.update_layout(height=320)
             st.plotly_chart(fig2, use_container_width=True)
-        
+
         with col_chart2:
             if documents:
                 sizes = [doc["size"] / 1024 for doc in documents]
@@ -339,7 +320,7 @@ def show():
                     x="الحجم (KB)",
                     title=f"<b>{T['size_dist']}</b>",
                     nbins=10,
-                    color_discrete_sequence=["#34D399" if is_dark else "#10B981"]
+                    color_discrete_sequence=["#F48FB1" if is_dark else "#AD1457"]
                 )
                 fig3 = update_chart_theme(fig3, is_dark)
                 fig3.update_layout(height=320)
@@ -352,7 +333,7 @@ def show():
     # ============================================================
     if suppliers:
         st.subheader(T["supplier_analysis"])
-        
+
         suppliers_df = pd.DataFrame([
             {
                 "المورد": s["name"],
@@ -362,19 +343,19 @@ def show():
             }
             for s in suppliers
         ])
-        
+
         st.dataframe(
             suppliers_df,
             use_container_width=True,
             hide_index=True
         )
-        
+
         fig4 = px.bar(
             suppliers_df,
             x="المورد",
             y="المستندات",
             title=f"<b>{T['docs_per_supplier']}</b>",
-            color_discrete_sequence=["#A78BFA" if is_dark else "#7C3AED"]
+            color_discrete_sequence=["#C2185B" if is_dark else "#880E4F"]
         )
         fig4 = update_chart_theme(fig4, is_dark)
         fig4.update_layout(height=340)
@@ -382,21 +363,23 @@ def show():
 
     # ============================================================
     # 8. قسم الجودة (Quality Metrics)
+    # ملحوظة: مقياس RdYlGn (أحمر-أصفر-أخضر) سبته زي ما هو لأنه
+    # دلالي عالميًا (منخفض→مرتفع) ومش لون براند
     # ============================================================
     if quality_scores:
         st.markdown("---")
         st.subheader(T["quality_analysis"])
-        
+
         scores_df = pd.DataFrame(quality_scores)
         col_q1, col_q2 = st.columns(2)
-        
+
         with col_q1:
             st.metric(
                 T["avg_quality"],
                 f"{avg_quality_val}%",
                 delta="+5%" if avg_quality_val > 80 else "0%"
             )
-        
+
         with col_q2:
             best = max(quality_scores, key=lambda x: x["score"])
             st.metric(
@@ -404,7 +387,7 @@ def show():
                 best["supplier"],
                 delta=f"{best['score']}%"
             )
-        
+
         fig5 = px.bar(
             scores_df,
             x="supplier",
@@ -426,7 +409,7 @@ def show():
     if contracts:
         st.markdown("---")
         st.subheader(T["contract_analysis"])
-        
+
         contracts_df = pd.DataFrame([
             {
                 "المورد": c["supplier"],
@@ -435,15 +418,15 @@ def show():
             }
             for c in contracts
         ]).sort_values("القيمة (SAR)", ascending=False)
-        
+
         st.dataframe(contracts_df, use_container_width=True, hide_index=True)
-        
+
         fig6 = px.bar(
             contracts_df,
             x="المورد",
             y="القيمة (SAR)",
             title=f"<b>{T['contract_values_title']}</b>",
-            color_discrete_sequence=["#FBBF24" if is_dark else "#D97706"]
+            color_discrete_sequence=["#AD1457" if is_dark else "#880E4F"]
         )
         fig6 = update_chart_theme(fig6, is_dark)
         fig6.update_layout(height=340)
@@ -455,19 +438,19 @@ def show():
     st.markdown("---")
     with st.expander(T["system_info"], expanded=False):
         col_sys1, col_sys2 = st.columns(2)
-        
+
         with col_sys1:
             st.markdown(f"**{T['paths']}:**")
             st.code(f"KNOWLEDGE_BASE: {settings.KNOWLEDGE_BASE_PATH}")
             st.code(f"FAISS_INDEX: {settings.FAISS_INDEX_PATH}")
             st.code(f"DATA_PATH: {settings.DATA_PATH}")
-        
+
         with col_sys2:
             st.markdown(f"**{T['settings']}:**")
             st.code(f"MODEL: {settings.EMBEDDING_MODEL}")
             st.code(f"DEVICE: {settings.EMBEDDING_DEVICE}")
             st.code(f"DIMENSION: {settings.EMBEDDING_DIMENSION}")
-        
+
         st.markdown(f"**{T['index_status']}:**")
         try:
             loader = FAISSLoader()
