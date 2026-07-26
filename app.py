@@ -2,9 +2,10 @@ import streamlit as st
 import sys
 import os
 import uuid
+import asyncio
 from pathlib import Path
 
-# إدراج المسار الرئيسي للترويد
+# إدراج المسار الرئيسي للتطبيق
 sys.path.append(str(Path(__file__).parent))
 
 from components.sidebar import render_sidebar
@@ -71,7 +72,7 @@ HOME_TRANSLATIONS = {
 # 🎨 تحسين التنسيقات وإخفاء قائمة Streamlit الافتراضية
 # ============================================================
 def load_css():
-    """تحميل التنسيقات مع إخفاء قائمة التنقل الافتراضية لـ Streamlit"""
+    """تحميل التنسيقات مع إخفاء قائمة التنقل الافتراضية لـ Streamlit وتحسين كروت الإحصائيات"""
     st.markdown("""
         <style>
         /* 🚫 إخفاء قائمة التنقل الافتراضية التي يولدها Streamlit */
@@ -79,12 +80,27 @@ def load_css():
             display: none !important;
         }
         
-        /* بطاقات الإحصائيات */
+        /* Hero Section */
+        .hero-banner {
+            background: rgba(56, 189, 248, 0.05);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        /* بطاقات الإحصائيات المتكيفة مع الألوان */
         .metric-card {
+            background-color: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(128, 128, 128, 0.2);
             border-radius: 14px;
             padding: 1.2rem;
             text-align: center;
-            transition: all 0.3s ease;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+        .metric-card:hover {
+            transform: translateY(-3px);
+            border-color: #38BDF8;
         }
         .metric-value {
             font-size: 1.8rem;
@@ -95,13 +111,7 @@ def load_css():
         .metric-label {
             font-size: 0.85rem;
             font-weight: 600;
-        }
-        
-        /* Hero Section */
-        .hero-banner {
-            border-radius: 16px;
-            padding: 2rem;
-            margin-bottom: 1.5rem;
+            opacity: 0.85;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -140,10 +150,8 @@ init_session_state()
 # ============================================================
 @st.cache_resource(show_spinner="⏳ Checking & Building Chroma Index...")
 def build_index_if_needed():
-    import asyncio
-    from database.chroma_loader import ChromaLoader  # ✅ استخدام Chroma
+    from database.chroma_loader import ChromaLoader
     
-    # ✅ التحقق من وجود بيانات في Chroma
     chroma_loader = ChromaLoader()
     
     if chroma_loader.get_index_size() > 0:
@@ -153,8 +161,14 @@ def build_index_if_needed():
     logger.info("🔨 Building Chroma index...")
     try:
         from scripts.build_index import build_index
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+        
+        # معالجة حلقة الأحداث آمنة لمواضيع Streamlit
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
         result = loop.run_until_complete(build_index())
         return result
     except Exception as e:
@@ -179,6 +193,14 @@ def show_home():
     
     # جلب ترجمة الواجهة بناءً على اللغة المحددة
     T = HOME_TRANSLATIONS.get(current_lang, HOME_TRANSLATIONS["ar"])
+
+    # 🌐 تطبيق الاتجاه RTL تلقائياً عند استخدام اللغة العربية
+    if current_lang == "ar":
+        st.markdown("""
+            <style>
+                .stApp { direction: rtl; text-align: right; }
+            </style>
+        """, unsafe_allow_html=True)
 
     # 1. Hero Banner ترحيبي
     st.markdown(f"""
@@ -262,7 +284,7 @@ def show_home():
     with st.expander(T['sys_info_title'], expanded=False):
         ec1, ec2 = st.columns(2)
         with ec1:
-            st.code(f"Chroma Path: {settings.CHROMA_PATH}", language="text")  # ✅ تغيير إلى Chroma
+            st.code(f"Chroma Path: {settings.CHROMA_PATH}", language="text")
             st.code(f"Docs Path: {settings.KNOWLEDGE_BASE_PATH}", language="text")
         with ec2:
             st.code(f"LLM Model: {settings.GROQ_MODEL}", language="text")
