@@ -502,3 +502,84 @@ a:hover {
     color: #C2185B !important;
     text-decoration: underline !important;
 }
+/* ============================================================
+   20. إصلاح شريط الإدخال في الوضع الفاتح والداكن
+   ============================================================ */
+
+/* ✅ إصلاح أساسي لشريط الإدخال */
+[data-testid="stChatInput"] textarea {
+    color: #4A0E2E !important;
+    background-color: #FFFFFF !important;
+    border: 2px solid #E0218A !important;
+    border-radius: 12px !important;
+    padding: 10px 14px !important;
+    font-size: 1rem !important;
+}
+
+[data-testid="stChatInput"] textarea::placeholder {
+    color: #C2185B !important;
+    opacity: 0.7 !important;
+}
+
+[data-testid="stChatInput"] textarea:focus {
+    border-color: #C2185B !important;
+    box-shadow: 0 0 0 3px rgba(224, 33, 138, 0.2) !important;
+    outline: none !important;
+}
+
+/* ✅ إصلاح حاوية شريط الإدخال */
+[data-testid="stChatInput"] {
+    background-color: #FFFFFF !important;
+    border: 2px solid #E0218A !important;
+    border-radius: 12px !important;
+}
+
+[data-testid="stChatInput"]:focus-within {
+    border-color: #C2185B !important;
+    box-shadow: 0 0 0 3px rgba(224, 33, 138, 0.2) !important;
+}
+
+/* ✅ إصلاح الوضع الداكن لشريط الإدخال */
+.stApp[data-theme="dark"] [data-testid="stChatInput"] textarea {
+    color: #FCE4EC !important;
+    background-color: #2B0715 !important;
+    border-color: #C2185B !important;
+}
+
+.stApp[data-theme="dark"] [data-testid="stChatInput"] textarea::placeholder {
+    color: #C48098 !important;
+}
+
+.stApp[data-theme="dark"] [data-testid="stChatInput"] {
+    background-color: #2B0715 !important;
+    border-color: #C2185B !important;
+}
+
+/* ✅ إصلاح المدخلات النصية العامة */
+.stTextInput input {
+    color: #4A0E2E !important;
+    background-color: #FFFFFF !important;
+    border: 2px solid #E0218A !important;
+    border-radius: 10px !important;
+}
+
+.stTextInput input::placeholder {
+    color: #C2185B !important;
+    opacity: 0.7 !important;
+}
+
+.stTextInput input:focus {
+    border-color: #C2185B !important;
+    box-shadow: 0 0 0 3px rgba(224, 33, 138, 0.2) !important;
+}
+
+/* ✅ الوضع الداكن للمدخلات العامة */
+.stApp[data-theme="dark"] .stTextInput input {
+    color: #FCE4EC !important;
+    background-color: #2B0715 !important;
+    border-color: #C2185B !important;
+}
+
+.stApp[data-theme="dark"] .stTextInput input::placeholder {
+    color: #C48098 !important;
+}
