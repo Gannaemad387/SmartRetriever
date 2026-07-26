@@ -29,10 +29,10 @@ st.set_page_config(
 
 
 # ============================================================
-# 🎨 تحميل التنسيقات المخصصة (CSS)
+# 🎨 تحميل التنسيقات المخصصة (Barbie Edition Fixes)
 # ============================================================
 def load_css():
-    """تحميل تنسيقات الواجهة وإخفاء القائمة الجانبية الافتراضية"""
+    """تحميل تنسيقات الواجهة وإخفاء القائمة الجانبية الافتراضية مع تطبيق ثيم Barbie"""
     st.markdown("""
         <style>
         /* 🚫 إخفاء قائمة التنقل الافتراضية التي يولدها Streamlit */
@@ -40,40 +40,48 @@ def load_css():
             display: none !important;
         }
 
-        /* تحسين صندوق المحادثة */
-        .stChatMessage {
-            border-radius: 12px !important;
-            padding: 1rem !important;
-            margin-bottom: 0.8rem !important;
-            border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        /* 🌸 تحسين هيدر المحادثة ليتوافق مع ثيم Barbie */
+        .chat-header {
+            background: linear-gradient(135deg, #FFFFFF 0%, #FCE4EC 100%) !important;
+            border: 2px solid #F48FB1 !important;
+            border-radius: 16px !important;
+            padding: 1.2rem 1.5rem !important;
+            margin-bottom: 1.5rem !important;
+            box-shadow: 0 4px 15px rgba(224, 33, 138, 0.1) !important;
         }
 
-        /* هيدر الصفحة */
-        .chat-header {
-            background: linear-gradient(135deg, #1E1B4B 0%, #0F172A 100%);
-            border: 1px solid rgba(99, 102, 241, 0.2);
-            border-radius: 14px;
-            padding: 1.2rem 1.5rem;
-            margin-bottom: 1.5rem;
+        .chat-header h2 {
+            color: #E0218A !important;
+            font-weight: 800 !important;
+            margin: 0 0 6px 0 !important;
         }
-        
-        /* أزرار الأسئلة المقترحة */
+
+        .chat-header p {
+            color: #4A0E2E !important;
+            font-size: 0.95rem !important;
+            margin: 0 !important;
+        }
+
+        /* 📌 أزرار الأسئلة المقترحة (Barbie Style) */
         div[data-testid="stColumn"] div.stButton > button {
-            background: #182232 !important;
-            border: 1px solid rgba(255, 255, 255, 0.08) !important;
-            color: #CBD5E1 !important;
-            border-radius: 10px !important;
+            background: #FFFFFF !important;
+            border: 2px solid #F48FB1 !important;
+            color: #4A0E2E !important;
+            border-radius: 12px !important;
             padding: 0.6rem 0.8rem !important;
-            font-size: 0.88rem !important;
+            font-size: 0.9rem !important;
+            font-weight: 600 !important;
             text-align: right !important;
-            transition: all 0.2s ease !important;
+            transition: all 0.3s ease !important;
+            box-shadow: 0 2px 8px rgba(224, 33, 138, 0.05) !important;
         }
         
         div[data-testid="stColumn"] div.stButton > button:hover {
-            border-color: #38BDF8 !important;
-            color: #38BDF8 !important;
-            background: #1E293B !important;
+            border-color: #E0218A !important;
+            color: #E0218A !important;
+            background: #FCE4EC !important;
             transform: translateY(-2px) !important;
+            box-shadow: 0 4px 12px rgba(224, 33, 138, 0.2) !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -205,7 +213,7 @@ def display_suggested_questions():
         return
 
     st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("##### 💡 أسئلة مقترحة للبدء:")
+    st.markdown("<h5 style='color: #4A0E2E; font-weight: 700;'>💡 أسئلة مقترحة للبدء:</h5>", unsafe_allow_html=True)
 
     suggestions = [
         "ما هي شروط عقد Alpha Inc؟",
@@ -244,18 +252,14 @@ def show():
     if selected_page != "المساعد الذكي":
         handle_routing(selected_page)
 
-    # ✅ 2. الهيدر والتحكم العشرين
+    # ✅ 2. الهيدر والتحكم
     col_title, col_actions = st.columns([3, 1.5])
     
     with col_title:
         st.markdown("""
         <div class="chat-header">
-            <h2 style="color: #FFFFFF; font-weight: 800; margin: 0 0 6px 0;">
-                💬 المساعد الذكي (SmartRetriever)
-            </h2>
-            <p style="color: #94A3B8; font-size: 0.88rem; margin: 0;">
-                طرح الأسئلة والبحث التفاعلي في العقود، السياسات، والمستندات المخزنة.
-            </p>
+            <h2>💬 المساعد الذكي (SmartRetriever)</h2>
+            <p>طرح الأسئلة والبحث التفاعلي في العقود، السياسات، والمستندات المخزنة.</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -276,7 +280,7 @@ def show():
     # ✅ 3. عرض سجل الرسائل
     display_messages()
 
-    # ✅ 4. معالجة الأسلئة المجهزة أو المدخلة من مربع النص
+    # ✅ 4. معالجة الأسئلة المجهزة أو المدخلة من مربع النص
     query_to_process = None
 
     # إذا كان هناك سؤال معلق من الأزرار المقترحة
