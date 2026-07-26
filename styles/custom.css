@@ -77,18 +77,30 @@
 }
 
 /* رسالة المستخدم */
-[data-testid="stChatMessage"][data-testid="user"] {
+/* ملحوظة: السيلكتور القديم [data-testid="stChatMessage"][data-testid="user"]
+   كان غير صالح تقنيًا (نفس الـ attribute مينفعش يكون له قيمتين في نفس الوقت)،
+   فالقاعدة دي كانت أصلاً مش بتتفعّل أبدًا وكانت السبب في مشكلة عدم وضوح
+   الألوان في الـ Dark Mode. استخدمنا :has() لاستهداف الفقاعة عن طريق الـ Avatar. */
+[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
     background: linear-gradient(135deg, #E0218A, #C2185B) !important;
     color: white !important;
     border-bottom-right-radius: 4px !important;
 }
 
+[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) * {
+    color: white !important;
+}
+
 /* رسالة المساعد */
-[data-testid="stChatMessage"][data-testid="assistant"] {
+[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) {
     background: #3D0F24 !important;
     color: #FCE4EC !important;
     border-bottom-left-radius: 4px !important;
     border: 1px solid #5C1938 !important;
+}
+
+[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) * {
+    color: #FCE4EC !important;
 }
 
 /* مدخل النص */
