@@ -49,9 +49,10 @@ DOCS_TRANSLATIONS = {
         "btn_preview": "👁️ معاينة",
         "btn_delete": "🗑️ حذف",
         "btn_download": "📥 تنزيل",
-        "rebuild_btn": "🔄 إعادة بناء الفهرس الذكي (FAISS)",
+        "rebuild_btn": "🔄 إعادة بناء الفهرس الذكي",
         "rebuilding": "🔄 جاري تحديث الفهرس...",
-        "kb_path_lbl": "📁 مسار قاعدة المعرفة المحلي:"
+        "kb_path_lbl": "📁 مسار قاعدة المعرفة المحلي:",
+        "upload_success": "✅ تم رفع الملف بنجاح:"
     },
     "en": {
         "title": "📄 Document & Knowledge Base Management",
@@ -72,40 +73,154 @@ DOCS_TRANSLATIONS = {
         "btn_preview": "👁️ Preview",
         "btn_delete": "🗑️ Delete",
         "btn_download": "📥 Download",
-        "rebuild_btn": "🔄 Rebuild FAISS Vector Index",
+        "rebuild_btn": "🔄 Rebuild Vector Index",
         "rebuilding": "🔄 Updating index...",
-        "kb_path_lbl": "📁 Local Knowledge Base Path:"
+        "kb_path_lbl": "📁 Local Knowledge Base Path:",
+        "upload_success": "✅ File uploaded successfully:"
     }
 }
 
 
 # ============================================================
-# 🎨 تحميل التنسيقات المخصصة (CSS)
+# 🎨 تحميل التنسيقات المخصصة (CSS - Barbie Colors)
 # ============================================================
 def load_css():
     """إخفاء القائمة الافتراضية وتنسيق البطاقات والجداول"""
     st.markdown("""
         <style>
-        [data-testid="stSidebarNav"] { display: none !important; }
+        /* 🚫 إخفاء قائمة التنقل الافتراضية */
+        [data-testid="stSidebarNav"] { 
+            display: none !important; 
+        }
 
+        /* 🎨 Barbie Colors */
+        :root {
+            --bg-primary: #FCE4EC;
+            --bg-secondary: #FFFFFF;
+            --primary: #E0218A;
+            --primary-dark: #C2185B;
+            --text-primary: #4A0E2E;
+            --text-secondary: #C2185B;
+            --shadow: rgba(224, 33, 138, 0.2);
+        }
+
+        /* خلفية التطبيق */
+        .stApp {
+            background-color: #FCE4EC !important;
+        }
+
+        /* الهيدر */
         .doc-header {
-            background: linear-gradient(135deg, #1E1B4B 0%, #0F172A 100%);
-            border: 1px solid rgba(99, 102, 241, 0.2);
+            background: linear-gradient(135deg, #FCE4EC 0%, #E0218A 100%) !important;
+            border: 2px solid #C2185B !important;
             border-radius: 14px;
             padding: 1.2rem 1.5rem;
             margin-bottom: 1.5rem;
+            box-shadow: 0 4px 20px rgba(224, 33, 138, 0.2);
+        }
+        .doc-header h2 {
+            color: #FFFFFF !important;
+            font-weight: 800;
+            margin: 0 0 6px 0;
+        }
+        .doc-header p {
+            color: #FFFFFF !important;
+            font-size: 0.88rem;
+            margin: 0;
         }
 
+        /* بطاقات المستندات */
         .doc-card {
-            background-color: rgba(30, 41, 59, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: #FFFFFF !important;
+            border: 2px solid #E0218A !important;
             border-radius: 12px;
             padding: 1rem;
             margin-bottom: 0.6rem;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(224, 33, 138, 0.08);
         }
         .doc-card:hover {
-            border-color: #38BDF8;
+            border-color: #C2185B !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(224, 33, 138, 0.15);
+        }
+
+        /* بطاقات الإحصائيات */
+        div[data-testid="stMetric"] {
+            background: #FFFFFF !important;
+            border: 2px solid #E0218A !important;
+            border-radius: 12px !important;
+            padding: 12px !important;
+            box-shadow: 0 2px 10px rgba(224, 33, 138, 0.08);
+        }
+        div[data-testid="stMetricValue"] {
+            color: #E0218A !important;
+        }
+        div[data-testid="stMetricLabel"] {
+            color: #4A0E2E !important;
+        }
+
+        /* النصوص */
+        h1, h2, h3, h4, h5, h6, p, span, label, div {
+            color: #4A0E2E !important;
+        }
+        .stCaption, .stCaption p {
+            color: #C2185B !important;
+        }
+
+        /* الأزرار */
+        .stButton > button {
+            background: linear-gradient(135deg, #E0218A 0%, #C2185B 100%) !important;
+            color: #FFFFFF !important;
+            border: none !important;
+            border-radius: 12px !important;
+            font-weight: 700 !important;
+            box-shadow: 0 4px 15px rgba(224, 33, 138, 0.3);
+            transition: all 0.3s ease !important;
+        }
+        .stButton > button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(224, 33, 138, 0.4);
+        }
+
+        /* المدخلات */
+        .stTextInput input, .stSelectbox > div, .stFileUploader > div {
+            background-color: #FFFFFF !important;
+            color: #4A0E2E !important;
+            border: 2px solid #E0218A !important;
+            border-radius: 10px !important;
+        }
+        .stTextInput input:focus {
+            border-color: #C2185B !important;
+            box-shadow: 0 0 0 3px rgba(224, 33, 138, 0.2);
+        }
+
+        /* التوسعات */
+        .stExpander {
+            background: #FFFFFF !important;
+            border: 2px solid #E0218A !important;
+            border-radius: 12px !important;
+            box-shadow: 0 2px 10px rgba(224, 33, 138, 0.08);
+        }
+
+        /* المقسّم */
+        hr {
+            border-color: #E0218A !important;
+            opacity: 0.3;
+        }
+
+        /* صناديق المعلومات */
+        .stAlert {
+            border-radius: 12px !important;
+            border: 2px solid #E0218A !important;
+        }
+
+        /* روابط */
+        a {
+            color: #E0218A !important;
+        }
+        a:hover {
+            color: #C2185B !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -209,7 +324,7 @@ def preview_document_content(file_path: str) -> str:
 def rebuild_index():
     """إعادة بناء فهرس FAISS تلقائياً"""
     try:
-        script_path = Path(__file__).parent.parent.parent / "scripts" / "build_index.py"
+        script_path = Path(__file__).parent.parent / "scripts" / "build_index.py"
         if script_path.exists():
             result = subprocess.run(
                 ["python", str(script_path)],
@@ -247,7 +362,7 @@ def show():
     st.markdown(f"""
     <div class="doc-header">
         <h2 style="color: #FFFFFF; font-weight: 800; margin: 0 0 6px 0;">{T['title']}</h2>
-        <p style="color: #94A3B8; font-size: 0.88rem; margin: 0;">{T['subtitle']}</p>
+        <p style="color: #FFFFFF; font-size: 0.88rem; margin: 0;">{T['subtitle']}</p>
     </div>
     """, unsafe_allow_html=True)
 
