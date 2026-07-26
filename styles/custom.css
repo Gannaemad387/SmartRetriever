@@ -1,25 +1,10 @@
-/* app/styles/custom.css */
-/* 🎨 تنسيقات مخصصة لتطبيق SmartRetriever - Barbie Edition */
-
 /* ============================================================
-   1. تنسيقات عامة
+   🎨 custom.css - SmartRetriever (Barbie Edition) - Complete Fix
    ============================================================ */
 
-/* تحسين الخطوط */
+/* 1. استيراد الخط والاتجاه العام (RTL) */
 @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap');
 
-* {
-    font-family: 'Tajawal', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-/* تنسيق الصفحة الرئيسية */
-.main {
-    padding: 0 1rem;
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-/* 🎨 Barbie Colors */
 :root {
     --bg-primary: #FCE4EC;
     --bg-secondary: #FFFFFF;
@@ -27,525 +12,249 @@
     --primary-dark: #C2185B;
     --text-primary: #4A0E2E;
     --text-secondary: #C2185B;
-    --shadow: rgba(224, 33, 138, 0.2);
-    --border-color: #E0218A;
+    --shadow: rgba(224, 33, 138, 0.15);
+    --border-color: #F48FB1;
+}
+
+* {
+    font-family: 'Tajawal', 'Segoe UI', Tahoma, Geneva, sans-serif !important;
+}
+
+/* 🌐 فرض خلفية التطبيق واتجاه النص من اليمين لليسار */
+html, body, .stApp {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+    direction: rtl !important;
+    text-align: right !important;
+}
+
+/* إخفاء خلفيات Streamlit الافتراضية الشفافة/الداكنة */
+[data-testid="stHeader"], [data-testid="stToolbar"] {
+    background: transparent !important;
+}
+
+.main {
+    padding: 1rem;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 /* ============================================================
-   2. تنسيق القائمة الجانبية (Sidebar)
+   2. القائمة الجانبية (Sidebar)
+   ============================================================ */
+[data-testid="stSidebar"] {
+    background-color: #FFFFFF !important;
+    border-inline-end: 2px solid var(--border-color) !important;
+}
+
+[data-testid="stSidebar"] * {
+    color: var(--text-primary) !important;
+}
+
+[data-testid="stSidebar"] h1, 
+[data-testid="stSidebar"] h2, 
+[data-testid="stSidebar"] h3 {
+    color: var(--primary) !important;
+}
+
+/* ============================================================
+   3. مدخلات النصوص والقوائم المنسدلة (Fixing Dropdowns & Inputs)
    ============================================================ */
 
-/* خلفية القائمة الجانبية */
-[data-testid="stSidebar"] {
+/* مربع البحث ومدخلات النصوص */
+.stTextInput input, .stSelectbox div[data-baseweb="select"] {
+    background-color: #FFFFFF !important;
+    color: var(--text-primary) !important;
+    border: 2px solid var(--border-color) !important;
+    border-radius: 10px !important;
+}
+
+.stTextInput input:focus, .stSelectbox div[data-baseweb="select"]:focus {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px var(--shadow) !important;
+}
+
+/* القائمة المنسدلة عند الفتح (Dropdown Popover) */
+div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"] {
+    background-color: #FFFFFF !important;
+    border: 2px solid var(--border-color) !important;
+    border-radius: 10px !important;
+}
+
+li[role="option"], div[role="option"] {
+    color: var(--text-primary) !important;
+    background-color: #FFFFFF !important;
+}
+
+li[role="option"]:hover, div[role="option"]:hover {
+    background-color: var(--bg-primary) !important;
+    color: var(--primary) !important;
+}
+
+/* ============================================================
+   4. البطاقات المخصصة والعناوين (Cards, Headers & Metrics)
+   ============================================================ */
+
+/* البطاقات العامة والهيدر */
+.page-header, .hero-banner, .info-box, .doc-card, .team-card, .spec-card {
     background: #FFFFFF !important;
-    border-right: 2px solid #E0218A !important;
+    border: 2px solid var(--border-color) !important;
+    border-radius: 16px !important;
+    padding: 1.5rem !important;
+    margin-bottom: 1.2rem !important;
+    box-shadow: 0 4px 15px var(--shadow) !important;
+    direction: rtl !important;
+    text-align: right !important;
 }
 
-[data-testid="stSidebar"] .stMarkdown {
-    color: #4A0E2E !important;
+.page-header h1, .hero-banner h1 {
+    color: var(--primary) !important;
+    font-weight: 800 !important;
+    margin-bottom: 0.5rem !important;
 }
 
-[data-testid="stSidebar"] h1,
-[data-testid="stSidebar"] h2,
-[data-testid="stSidebar"] h3 {
-    color: #E0218A !important;
+.page-header p, .hero-banner p {
+    color: var(--text-primary) !important;
+    font-size: 1.05rem !important;
 }
 
-[data-testid="stSidebar"] .stButton button {
-    background: linear-gradient(135deg, #E0218A, #C2185B) !important;
-    color: white !important;
+/* المقاييس الإحصائية (Metrics) */
+[data-testid="stMetric"] {
+    background: #FFFFFF !important;
+    border: 2px solid var(--border-color) !important;
+    border-radius: 12px !important;
+    padding: 1rem !important;
+    box-shadow: 0 4px 12px var(--shadow) !important;
+}
+
+[data-testid="stMetricLabel"] {
+    color: var(--text-primary) !important;
+    font-weight: 700 !important;
+}
+
+[data-testid="stMetricValue"] {
+    color: var(--primary) !important;
+    font-weight: 800 !important;
+}
+
+/* ============================================================
+   5. الأزرار التفاعلية (Buttons)
+   ============================================================ */
+
+.stButton > button {
+    background: linear-gradient(135deg, #FF4081, #E0218A) !important;
+    color: #FFFFFF !important;
     border: none !important;
-    border-radius: 8px !important;
-    padding: 0.5rem 1rem !important;
-    font-weight: 600 !important;
+    border-radius: 10px !important;
+    font-weight: 700 !important;
+    padding: 0.5rem 1.2rem !important;
+    box-shadow: 0 4px 12px var(--shadow) !important;
     transition: all 0.3s ease !important;
 }
 
-[data-testid="stSidebar"] .stButton button:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 4px 15px rgba(224, 33, 138, 0.4) !important;
+.stButton > button:hover {
+    transform: translateY(-2px) scale(1.02) !important;
+    box-shadow: 0 6px 18px rgba(224, 33, 138, 0.35) !important;
+    color: #FFFFFF !important;
 }
 
-[data-testid="stSidebar"] .stMetric {
-    background: #FCE4EC !important;
-    border-radius: 10px !important;
-    padding: 0.5rem !important;
-    border: 1px solid #E0218A !important;
+/* زر الثانوي (Secondary) */
+.stButton > button[kind="secondary"] {
+    background: #FFFFFF !important;
+    color: var(--text-primary) !important;
+    border: 2px solid var(--border-color) !important;
 }
 
-[data-testid="stSidebar"] .stMetric label {
-    color: #4A0E2E !important;
-}
-
-[data-testid="stSidebar"] .stMetric .stMetricValue {
-    color: #E0218A !important;
+.stButton > button[kind="secondary"]:hover {
+    background: var(--bg-primary) !important;
+    color: var(--primary) !important;
 }
 
 /* ============================================================
-   3. تنسيق المحادثة (Chat)
+   6. المحادثة (Chat UI)
    ============================================================ */
 
-/* فقاعات المحادثة */
 [data-testid="stChatMessage"] {
-    border-radius: 12px !important;
-    padding: 0.5rem 1rem !important;
-    margin-bottom: 0.5rem !important;
+    border-radius: 14px !important;
+    padding: 0.8rem 1.2rem !important;
+    margin-bottom: 0.8rem !important;
+    direction: rtl !important;
 }
 
 /* رسالة المستخدم */
 [data-testid="stChatMessage"][data-testid="user"] {
     background: linear-gradient(135deg, #E0218A, #C2185B) !important;
-    color: white !important;
-    border-bottom-right-radius: 4px !important;
+    color: #FFFFFF !important;
 }
 
-/* رسالة المساعد */
+/* رسالة المساعد الذكي */
 [data-testid="stChatMessage"][data-testid="assistant"] {
     background: #FFFFFF !important;
-    color: #4A0E2E !important;
-    border-bottom-left-radius: 4px !important;
-    border: 2px solid #E0218A !important;
+    color: var(--text-primary) !important;
+    border: 2px solid var(--border-color) !important;
 }
 
-/* مدخل النص */
+/* مدخل نص المحادثة */
 [data-testid="stChatInput"] {
-    border-radius: 12px !important;
-    border: 2px solid #E0218A !important;
+    border-radius: 14px !important;
+    border: 2px solid var(--primary) !important;
     background: #FFFFFF !important;
-    color: #4A0E2E !important;
 }
 
-[data-testid="stChatInput"]:focus {
-    border-color: #C2185B !important;
-    box-shadow: 0 0 0 3px rgba(224, 33, 138, 0.2) !important;
-}
-
-[data-testid="stChatInput"] input {
-    color: #4A0E2E !important;
-}
-
-[data-testid="stChatInput"] input::placeholder {
-    color: #C2185B !important;
+[data-testid="stChatInput"] textarea {
+    color: var(--text-primary) !important;
+    direction: rtl !important;
 }
 
 /* ============================================================
-   4. تنسيق الأزرار
-   ============================================================ */
-
-/* الأزرار الرئيسية */
-.stButton button {
-    border-radius: 8px !important;
-    font-weight: 600 !important;
-    transition: all 0.3s ease !important;
-}
-
-.stButton button[kind="primary"] {
-    background: linear-gradient(135deg, #E0218A, #C2185B) !important;
-    color: white !important;
-    border: none !important;
-    box-shadow: 0 4px 15px rgba(224, 33, 138, 0.3) !important;
-}
-
-.stButton button[kind="primary"]:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 8px 30px rgba(224, 33, 138, 0.4) !important;
-}
-
-.stButton button[kind="secondary"] {
-    background: #FFFFFF !important;
-    color: #4A0E2E !important;
-    border: 2px solid #E0218A !important;
-}
-
-.stButton button[kind="secondary"]:hover {
-    background: #FCE4EC !important;
-}
-
-/* أزرار الحذف */
-.stButton button[kind="danger"] {
-    background: #dc2626 !important;
-    color: white !important;
-    border: none !important;
-}
-
-.stButton button[kind="danger"]:hover {
-    background: #b91c1c !important;
-}
-
-/* ============================================================
-   5. تنسيق الأكورديون (Expander)
+   7. الأكورديون والجداول (Expanders & Tables)
    ============================================================ */
 
 [data-testid="stExpander"] {
     background: #FFFFFF !important;
-    border: 2px solid #E0218A !important;
-    border-radius: 10px !important;
-    box-shadow: 0 2px 10px rgba(224, 33, 138, 0.08) !important;
+    border: 2px solid var(--border-color) !important;
+    border-radius: 12px !important;
 }
 
 [data-testid="stExpander"] summary {
-    color: #4A0E2E !important;
-    font-weight: 600 !important;
+    color: var(--text-primary) !important;
+    font-weight: 700 !important;
 }
 
-[data-testid="stExpander"] summary:hover {
-    color: #E0218A !important;
-}
-
-/* ============================================================
-   6. تنسيق الجداول
-   ============================================================ */
-
-[data-testid="stTable"] {
+.stDataFrame, [data-testid="stTable"] {
     background: #FFFFFF !important;
-    border-radius: 10px !important;
-    border: 2px solid #E0218A !important;
-}
-
-[data-testid="stTable"] thead th {
-    background: #E0218A !important;
-    color: #FFFFFF !important;
-    font-weight: 600 !important;
-    border-bottom: 2px solid #C2185B !important;
-}
-
-[data-testid="stTable"] tbody td {
-    color: #4A0E2E !important;
-    border-bottom: 1px solid #FCE4EC !important;
-}
-
-[data-testid="stTable"] tbody tr:hover {
-    background: #FCE4EC !important;
-}
-
-/* ============================================================
-   7. تنسيق الرسوم البيانية (Plotly)
-   ============================================================ */
-
-.js-plotly-plot .plotly .main-svg {
-    background: transparent !important;
-}
-
-.js-plotly-plot .plotly .cartesianlayer {
-    background: transparent !important;
-}
-
-.js-plotly-plot .plotly .gridlayer path {
-    stroke: rgba(224, 33, 138, 0.2) !important;
-}
-
-.js-plotly-plot .plotly .xtick text,
-.js-plotly-plot .plotly .ytick text {
-    fill: #4A0E2E !important;
-}
-
-/* ============================================================
-   8. تنسيق البطاقات والمعلومات
-   ============================================================ */
-
-/* بطاقات المعلومات */
-.stMetric {
-    background: #FFFFFF !important;
+    border: 2px solid var(--border-color) !important;
     border-radius: 12px !important;
-    padding: 1rem !important;
-    border: 2px solid #E0218A !important;
-    box-shadow: 0 2px 10px rgba(224, 33, 138, 0.08) !important;
-}
-
-.stMetric label {
-    color: #4A0E2E !important;
-}
-
-.stMetric .stMetricValue {
-    color: #E0218A !important;
-}
-
-.stMetric .stMetricDelta {
-    color: #10b981 !important;
 }
 
 /* ============================================================
-   9. تنسيق الأخطاء والتنبيهات
-   ============================================================ */
-
-/* رسائل الخطأ */
-[data-testid="stException"] {
-    background: #FCE4EC !important;
-    border: 2px solid #C2185B !important;
-    border-radius: 10px !important;
-    color: #4A0E2E !important;
-}
-
-/* رسائل النجاح */
-[data-testid="stSuccess"] {
-    background: #F0FDF4 !important;
-    border: 2px solid #22C55E !important;
-    border-radius: 10px !important;
-    color: #166534 !important;
-}
-
-/* رسائل التحذير */
-[data-testid="stWarning"] {
-    background: #FEF3C7 !important;
-    border: 2px solid #F59E0B !important;
-    border-radius: 10px !important;
-    color: #92400E !important;
-}
-
-/* رسائل المعلومات */
-[data-testid="stInfo"] {
-    background: #FCE4EC !important;
-    border: 2px solid #E0218A !important;
-    border-radius: 10px !important;
-    color: #4A0E2E !important;
-}
-
-/* ============================================================
-   10. تنسيق الأقسام والفاصل
-   ============================================================ */
-
-/* الفاصل الأفقي */
-hr {
-    border: none !important;
-    height: 2px !important;
-    background: linear-gradient(90deg, transparent, #E0218A, #C2185B, transparent) !important;
-    margin: 2rem 0 !important;
-}
-
-/* ============================================================
-   11. تنسيق الصفحات الفرعية
-   ============================================================ */
-
-/* رأس الصفحة */
-.page-header {
-    background: linear-gradient(135deg, #FCE4EC, #E0218A) !important;
-    padding: 1.5rem !important;
-    border-radius: 12px !important;
-    border: 2px solid #C2185B !important;
-    margin-bottom: 2rem !important;
-    box-shadow: 0 4px 20px rgba(224, 33, 138, 0.2) !important;
-}
-
-.page-header h1 {
-    color: #FFFFFF !important;
-    font-size: 2rem !important;
-    font-weight: 800 !important;
-}
-
-.page-header p {
-    color: #FFFFFF !important;
-    font-size: 1.1rem !important;
-}
-
-/* ============================================================
-   12. تنسيق شريط التقدم
-   ============================================================ */
-
-[data-testid="stProgress"] {
-    background: #FCE4EC !important;
-    border-radius: 10px !important;
-    overflow: hidden !important;
-}
-
-[data-testid="stProgress"] > div {
-    background: linear-gradient(90deg, #E0218A, #C2185B) !important;
-    border-radius: 10px !important;
-}
-
-/* ============================================================
-   13. تنسيق علامات التبويب
-   ============================================================ */
-
-[data-testid="stTabs"] {
-    background: #FFFFFF !important;
-    border-radius: 10px !important;
-    padding: 0.5rem !important;
-    border: 2px solid #E0218A !important;
-}
-
-[data-testid="stTabs"] button {
-    color: #4A0E2E !important;
-    border-radius: 8px !important;
-    transition: all 0.3s ease !important;
-}
-
-[data-testid="stTabs"] button[aria-selected="true"] {
-    background: linear-gradient(135deg, #E0218A, #C2185B) !important;
-    color: white !important;
-}
-
-[data-testid="stTabs"] button:hover {
-    background: #FCE4EC !important;
-    color: #E0218A !important;
-}
-
-/* ============================================================
-   14. تنسيق الملفات المرفوعة
+   8. رفع الملفات والروابط (File Uploader & Links)
    ============================================================ */
 
 [data-testid="stFileUploader"] {
     background: #FFFFFF !important;
-    border: 2px dashed #E0218A !important;
-    border-radius: 12px !important;
-    padding: 2rem !important;
+    border: 2px dashed var(--primary) !important;
+    border-radius: 14px !important;
 }
 
 [data-testid="stFileUploader"]:hover {
-    border-color: #C2185B !important;
-    background: #FCE4EC !important;
+    background: var(--bg-primary) !important;
 }
 
-/* ============================================================
-   15. تنسيق للموبايل (Responsive)
-   ============================================================ */
-
-@media (max-width: 768px) {
-    .main {
-        padding: 0 0.5rem;
-    }
-    
-    .page-header h1 {
-        font-size: 1.5rem;
-    }
-    
-    [data-testid="stMetric"] {
-        padding: 0.5rem !important;
-    }
-    
-    [data-testid="stChatMessage"] {
-        padding: 0.5rem !important;
-    }
-}
-
-/* ============================================================
-   16. تنسيقات إضافية - شاشة الترحيب
-   ============================================================ */
-
-/* تنسيق المركز */
-.centered {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 70vh;
-    text-align: center;
-}
-
-.centered h1 {
-    font-size: 3rem;
-    font-weight: 800;
-    background: linear-gradient(135deg, #E0218A, #C2185B);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
-.centered p {
-    color: #4A0E2E !important;
-    font-size: 1.2rem;
-    margin-top: 1rem;
-}
-
-/* ============================================================
-   17. تنسيقات المصادر
-   ============================================================ */
-
-.source-card {
-    background: #FFFFFF !important;
-    border: 2px solid #E0218A !important;
-    border-radius: 8px !important;
-    padding: 0.75rem !important;
-    margin: 0.5rem 0 !important;
-    transition: all 0.3s ease !important;
-}
-
-.source-card:hover {
-    border-color: #C2185B !important;
-    transform: translateX(5px) !important;
-    box-shadow: 0 4px 15px rgba(224, 33, 138, 0.15) !important;
-}
-
-.source-card .source-name {
-    color: #4A0E2E !important;
-    font-weight: 600 !important;
-}
-
-.source-card .source-score {
-    color: #E0218A !important;
-    font-size: 0.9rem !important;
-}
-
-.source-card .source-preview {
-    color: #C2185B !important;
-    font-size: 0.85rem !important;
-    margin-top: 0.25rem !important;
-}
-
-/* ============================================================
-   18. تنسيقات الأسئلة المقترحة
-   ============================================================ */
-
-.suggested-question {
-    background: #FFFFFF !important;
-    border: 2px solid #E0218A !important;
-    border-radius: 20px !important;
-    padding: 0.5rem 1rem !important;
-    margin: 0.25rem !important;
-    cursor: pointer !important;
-    transition: all 0.3s ease !important;
-    color: #4A0E2E !important;
-}
-
-.suggested-question:hover {
-    background: linear-gradient(135deg, #E0218A, #C2185B) !important;
-    color: white !important;
-    border-color: #C2185B !important;
-    transform: scale(1.02) !important;
-}
-
-/* ============================================================
-   19. تنسيقات الخلفية العامة
-   ============================================================ */
-
-/* الخلفية العامة */
-.stApp {
-    background: #FCE4EC !important;
-}
-
-/* النصوص العامة */
-.stMarkdown, .stText {
-    color: #4A0E2E !important;
-}
-
-/* الروابط */
 a {
-    color: #E0218A !important;
+    color: var(--primary) !important;
+    font-weight: 700 !important;
     text-decoration: none !important;
 }
 
 a:hover {
-    color: #C2185B !important;
+    color: var(--primary-dark) !important;
     text-decoration: underline !important;
 }
 
-/* ============================================================
-   20. تنسيق DataFrames
-   ============================================================ */
-
-.stDataFrame {
-    border: 2px solid #E0218A !important;
-    border-radius: 12px !important;
-    overflow: hidden !important;
-}
-
-.stDataFrame thead {
-    background: #E0218A !important;
-    color: #FFFFFF !important;
-}
-
-.stDataFrame tbody {
-    color: #4A0E2E !important;
-}
-
-.stDataFrame tbody tr:hover {
-    background: #FCE4EC !important;
+hr {
+    border: none !important;
+    height: 2px !important;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent) !important;
+    margin: 1.5rem 0 !important;
 }
