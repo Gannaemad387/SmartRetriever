@@ -29,59 +29,53 @@ st.set_page_config(
 
 
 # ============================================================
-# 🎨 تحميل التنسيقات المخصصة (Barbie Edition Fixes)
+# 🎨 تحميل التنسيقات المخصصة (CSS) - Barbie Palette 💖
 # ============================================================
 def load_css():
-    """تحميل تنسيقات الواجهة وإخفاء القائمة الجانبية الافتراضية مع تطبيق ثيم Barbie"""
+    """تحميل تنسيقات الواجهة الخاصة بصفحة المحادثة"""
     st.markdown("""
         <style>
-        /* 🚫 إخفاء قائمة التنقل الافتراضية التي يولدها Streamlit */
-        [data-testid="stSidebarNav"] {
-            display: none !important;
-        }
-
-        /* 🌸 تحسين هيدر المحادثة ليتوافق مع ثيم Barbie */
-        .chat-header {
-            background: linear-gradient(135deg, #FFFFFF 0%, #FCE4EC 100%) !important;
-            border: 2px solid #F48FB1 !important;
-            border-radius: 16px !important;
-            padding: 1.2rem 1.5rem !important;
-            margin-bottom: 1.5rem !important;
-            box-shadow: 0 4px 15px rgba(224, 33, 138, 0.1) !important;
-        }
-
-        .chat-header h2 {
-            color: #E0218A !important;
-            font-weight: 800 !important;
-            margin: 0 0 6px 0 !important;
-        }
-
-        .chat-header p {
-            color: #4A0E2E !important;
-            font-size: 0.95rem !important;
-            margin: 0 !important;
-        }
-
-        /* 📌 أزرار الأسئلة المقترحة (Barbie Style) */
-        div[data-testid="stColumn"] div.stButton > button {
-            background: #FFFFFF !important;
-            border: 2px solid #F48FB1 !important;
-            color: #4A0E2E !important;
+        /* تحسين صندوق المحادثة */
+        .stChatMessage {
             border-radius: 12px !important;
-            padding: 0.6rem 0.8rem !important;
-            font-size: 0.9rem !important;
-            font-weight: 600 !important;
-            text-align: right !important;
-            transition: all 0.3s ease !important;
-            box-shadow: 0 2px 8px rgba(224, 33, 138, 0.05) !important;
+            padding: 1rem !important;
+            margin-bottom: 0.8rem !important;
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
         }
-        
+
+        /* هيدر الصفحة - نفس كلاس .chat-header اللي بيتلون من apply_dynamic_theme
+           في sidebar.py، فبيستجيب تلقائي لتبديل الثيم */
+        .chat-header {
+            border-radius: 14px;
+            padding: 1.2rem 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .chat-header h2 {
+            font-weight: 800;
+            margin: 0 0 6px 0;
+        }
+        .chat-header p {
+            font-size: 0.88rem;
+            margin: 0;
+        }
+
+        /* أزرار الأسئلة المقترحة */
+        div[data-testid="stColumn"] div.stButton > button {
+            background: #3D0F24 !important;
+            border: 1px solid rgba(224, 33, 138, 0.2) !important;
+            color: #F3C6DC !important;
+            border-radius: 10px !important;
+            padding: 0.6rem 0.8rem !important;
+            font-size: 0.88rem !important;
+            text-align: right !important;
+            transition: all 0.2s ease !important;
+        }
+
         div[data-testid="stColumn"] div.stButton > button:hover {
             border-color: #E0218A !important;
             color: #E0218A !important;
-            background: #FCE4EC !important;
+            background: #4A0E2E !important;
             transform: translateY(-2px) !important;
-            box-shadow: 0 4px 12px rgba(224, 33, 138, 0.2) !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -113,24 +107,6 @@ def init_session_state():
         st.session_state.session_id = str(uuid.uuid4())
     if "pending_question" not in st.session_state:
         st.session_state.pending_question = None
-    if "current_page" not in st.session_state:
-        st.session_state.current_page = "المساعد الذكي"
-
-
-# ============================================================
-# 🔀 التوجيه بين الصفحات
-# ============================================================
-def handle_routing(selected_page: str):
-    """ربط التنقل بين الصفحات"""
-    page_routes = {
-        "HOME": "app.py",
-        "المستندات": "pages/2_Documents.py",
-        "التحليلات": "pages/3_Analytics.py",
-    }
-    if selected_page in page_routes:
-        target_file = page_routes[selected_page]
-        if Path(target_file).exists():
-            st.switch_page(target_file)
 
 
 # ============================================================
@@ -142,11 +118,10 @@ def display_messages():
         role = message.get("role", "user")
         content = message.get("content", "")
         sources = message.get("sources", [])
-        
+
         with st.chat_message(role):
             st.markdown(content)
-            
-            # عرض المصادر لردود المساعد
+
             if sources and role == "assistant":
                 render_sources(sources)
 
@@ -159,12 +134,10 @@ def process_question(question: str):
     if not question.strip():
         return
 
-    # 1. إضافة وعرض سؤال المستخدم
     st.session_state.messages.append({"role": "user", "content": question})
     with st.chat_message("user"):
         st.markdown(question)
 
-    # 2. توليد وعرض رد المساعد الذكي
     with st.chat_message("assistant"):
         with st.spinner("🤔 جاري البحث في المستندات واستخلاص الإجابة..."):
             try:
@@ -172,31 +145,28 @@ def process_question(question: str):
                     question=question,
                     session_id=st.session_state.session_id
                 )
-                
-                # تحديث معرف الجلسة إن وجد
+
                 if response.get("session_id"):
                     st.session_state.session_id = response["session_id"]
-                
+
                 answer = response.get("answer", "لم أتمكن من الحصول على إجابة.")
                 sources = response.get("sources", [])
-                
-                # عرض الإجابة والمصادر
+
                 st.markdown(answer)
                 if sources:
                     render_sources(sources)
-                
-                # حفظ الرد في حالة الجلسة
+
                 st.session_state.messages.append({
                     "role": "assistant",
                     "content": answer,
                     "sources": sources
                 })
-                
+
             except Exception as e:
                 error_msg = f"❌ حدث خطأ أثناء معالجة الطلب: {str(e)}"
                 st.error(error_msg)
                 logger.error(f"Chat error: {str(e)}")
-                
+
                 st.session_state.messages.append({
                     "role": "assistant",
                     "content": error_msg,
@@ -213,7 +183,7 @@ def display_suggested_questions():
         return
 
     st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("<h5 style='color: #4A0E2E; font-weight: 700;'>💡 أسئلة مقترحة للبدء:</h5>", unsafe_allow_html=True)
+    st.markdown("##### 💡 أسئلة مقترحة للبدء:")
 
     suggestions = [
         "ما هي شروط عقد Alpha Inc؟",
@@ -240,21 +210,16 @@ def show():
     load_css()
     init_session_state()
 
-    # ✅ 1. عرض السايدبار والتنقل
-    st.session_state.current_page = "المساعد الذكي"
-    selected_page = render_sidebar(
+    # ✅ 1. عرض السايدبار (بيتكفل بالثيم، إخفاء الـ nav التلقائي، واللغة والتنقل)
+    render_sidebar(
         show_theme_toggle=True,
         show_stats=False,
         show_navigation=True
     )
-    
-    # تحويل الصفحة في حال اضغط المستخدم على زر آخر بالسايدبار
-    if selected_page != "المساعد الذكي":
-        handle_routing(selected_page)
 
-    # ✅ 2. الهيدر والتحكم
+    # ✅ 2. الهيدر والتحكم العلوي
     col_title, col_actions = st.columns([3, 1.5])
-    
+
     with col_title:
         st.markdown("""
         <div class="chat-header">
@@ -283,16 +248,13 @@ def show():
     # ✅ 4. معالجة الأسئلة المجهزة أو المدخلة من مربع النص
     query_to_process = None
 
-    # إذا كان هناك سؤال معلق من الأزرار المقترحة
     if st.session_state.pending_question:
         query_to_process = st.session_state.pending_question
         st.session_state.pending_question = None
 
-    # مدخل النص الأساسي
     elif prompt := st.chat_input("اكتب سؤالك هنا عن المستندات أو العقود..."):
         query_to_process = prompt
 
-    # معالجة السؤال إذا وجد
     if query_to_process:
         process_question(query_to_process)
         st.rerun()
