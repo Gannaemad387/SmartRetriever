@@ -82,10 +82,10 @@ DOCS_TRANSLATIONS = {
 
 
 # ============================================================
-# 🎨 تحميل التنسيقات المخصصة (CSS - Barbie Colors)
+# 🎨 تحميل التنسيقات المخصصة (Barbie Aesthetic)
 # ============================================================
 def load_css():
-    """إخفاء القائمة الافتراضية وتنسيق البطاقات والجداول"""
+    """تنسيق الصفحة بالكامل لتتوافق مع ثيم Barbie الناعم"""
     st.markdown("""
         <style>
         /* 🚫 إخفاء قائمة التنقل الافتراضية */
@@ -93,134 +93,134 @@ def load_css():
             display: none !important; 
         }
 
-        /* 🎨 Barbie Colors */
-        :root {
-            --bg-primary: #FCE4EC;
-            --bg-secondary: #FFFFFF;
-            --primary: #E0218A;
-            --primary-dark: #C2185B;
-            --text-primary: #4A0E2E;
-            --text-secondary: #C2185B;
-            --shadow: rgba(224, 33, 138, 0.2);
-        }
-
-        /* خلفية التطبيق */
-        .stApp {
-            background-color: #FCE4EC !important;
-        }
-
-        /* الهيدر */
+        /* 🌸 الهيدر الرئيسي للمستندات */
         .doc-header {
-            background: linear-gradient(135deg, #FCE4EC 0%, #E0218A 100%) !important;
-            border: 2px solid #C2185B !important;
-            border-radius: 14px;
-            padding: 1.2rem 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 4px 20px rgba(224, 33, 138, 0.2);
+            background: linear-gradient(135deg, #FFFFFF 0%, #FCE4EC 100%) !important;
+            border: 2px solid #F48FB1 !important;
+            border-radius: 16px !important;
+            padding: 1.2rem 1.5rem !important;
+            margin-bottom: 1.5rem !important;
+            box-shadow: 0 4px 15px rgba(224, 33, 138, 0.1) !important;
         }
+
         .doc-header h2 {
-            color: #FFFFFF !important;
-            font-weight: 800;
-            margin: 0 0 6px 0;
+            color: #E0218A !important;
+            font-weight: 800 !important;
+            margin: 0 0 6px 0 !important;
         }
+
         .doc-header p {
-            color: #FFFFFF !important;
-            font-size: 0.88rem;
-            margin: 0;
+            color: #4A0E2E !important;
+            font-size: 0.92rem !important;
+            margin: 0 !important;
         }
 
-        /* بطاقات المستندات */
-        .doc-card {
-            background: #FFFFFF !important;
-            border: 2px solid #E0218A !important;
-            border-radius: 12px;
-            padding: 1rem;
-            margin-bottom: 0.6rem;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 10px rgba(224, 33, 138, 0.08);
-        }
-        .doc-card:hover {
-            border-color: #C2185B !important;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(224, 33, 138, 0.15);
-        }
-
-        /* بطاقات الإحصائيات */
+        /* 📊 بطاقات الإحصائيات (Metrics) */
         div[data-testid="stMetric"] {
             background: #FFFFFF !important;
-            border: 2px solid #E0218A !important;
-            border-radius: 12px !important;
-            padding: 12px !important;
-            box-shadow: 0 2px 10px rgba(224, 33, 138, 0.08);
+            border: 2px solid #F48FB1 !important;
+            border-radius: 14px !important;
+            padding: 14px !important;
+            box-shadow: 0 4px 12px rgba(224, 33, 138, 0.05) !important;
+            transition: all 0.3s ease !important;
         }
+
+        div[data-testid="stMetric"]:hover {
+            border-color: #E0218A !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 6px 18px rgba(224, 33, 138, 0.12) !important;
+        }
+
         div[data-testid="stMetricValue"] {
             color: #E0218A !important;
+            font-weight: 800 !important;
         }
+
         div[data-testid="stMetricLabel"] {
             color: #4A0E2E !important;
+            font-weight: 600 !important;
         }
 
-        /* النصوص */
-        h1, h2, h3, h4, h5, h6, p, span, label, div {
-            color: #4A0E2E !important;
-        }
-        .stCaption, .stCaption p {
-            color: #C2185B !important;
+        /* 📝 بطاقات المستندات */
+        .doc-card {
+            background: #FFFFFF !important;
+            border: 2px solid #F48FB1 !important;
+            border-radius: 14px !important;
+            padding: 1rem 1.2rem !important;
+            margin-bottom: 0.8rem !important;
+            transition: all 0.3s ease !important;
+            box-shadow: 0 2px 10px rgba(224, 33, 138, 0.05) !important;
         }
 
-        /* الأزرار */
+        .doc-card:hover {
+            border-color: #E0218A !important;
+            box-shadow: 0 4px 15px rgba(224, 33, 138, 0.15) !important;
+        }
+
+        /* 🔘 الأزرار العامة */
         .stButton > button {
             background: linear-gradient(135deg, #E0218A 0%, #C2185B 100%) !important;
             color: #FFFFFF !important;
             border: none !important;
             border-radius: 12px !important;
             font-weight: 700 !important;
-            box-shadow: 0 4px 15px rgba(224, 33, 138, 0.3);
+            padding: 0.5rem 1rem !important;
+            box-shadow: 0 4px 12px rgba(224, 33, 138, 0.25) !important;
             transition: all 0.3s ease !important;
         }
+
         .stButton > button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(224, 33, 138, 0.4);
+            transform: translateY(-2px) !important;
+            box-shadow: 0 6px 20px rgba(224, 33, 138, 0.38) !important;
+            background: linear-gradient(135deg, #C2185B 0%, #AD1457 100%) !important;
         }
 
-        /* المدخلات */
-        .stTextInput input, .stSelectbox > div, .stFileUploader > div {
+        /* 📥 زر التنزيل */
+        div[data-testid="stDownloadButton"] > button {
+            background: #FFFFFF !important;
+            color: #E0218A !important;
+            border: 2px solid #F48FB1 !important;
+            border-radius: 12px !important;
+            font-weight: 700 !important;
+            transition: all 0.3s ease !important;
+        }
+
+        div[data-testid="stDownloadButton"] > button:hover {
+            background: #FCE4EC !important;
+            border-color: #E0218A !important;
+            color: #C2185B !important;
+        }
+
+        /* ✏️ حقول المدخلات والقوائم */
+        .stTextInput input, .stSelectbox > div, div[data-testid="stFileUploader"] {
             background-color: #FFFFFF !important;
             color: #4A0E2E !important;
-            border: 2px solid #E0218A !important;
-            border-radius: 10px !important;
-        }
-        .stTextInput input:focus {
-            border-color: #C2185B !important;
-            box-shadow: 0 0 0 3px rgba(224, 33, 138, 0.2);
+            border: 2px solid #F48FB1 !important;
+            border-radius: 12px !important;
         }
 
-        /* التوسعات */
+        .stTextInput input:focus, .stSelectbox > div:focus-within {
+            border-color: #E0218A !important;
+            box-shadow: 0 0 0 3px rgba(224, 33, 138, 0.15) !important;
+        }
+
+        /* 📂 صندوق التوسعة Expander */
         .stExpander {
             background: #FFFFFF !important;
-            border: 2px solid #E0218A !important;
-            border-radius: 12px !important;
-            box-shadow: 0 2px 10px rgba(224, 33, 138, 0.08);
+            border: 2px solid #F48FB1 !important;
+            border-radius: 14px !important;
+            box-shadow: 0 2px 10px rgba(224, 33, 138, 0.05) !important;
         }
 
-        /* المقسّم */
+        /* 📌 العناوين والنصوص */
+        h1, h2, h3, h4, h5, h6, p, span, label {
+            color: #4A0E2E !important;
+        }
+
+        /* ➖ خط الفاصل */
         hr {
-            border-color: #E0218A !important;
-            opacity: 0.3;
-        }
-
-        /* صناديق المعلومات */
-        .stAlert {
-            border-radius: 12px !important;
-            border: 2px solid #E0218A !important;
-        }
-
-        /* روابط */
-        a {
-            color: #E0218A !important;
-        }
-        a:hover {
-            color: #C2185B !important;
+            border-color: #F48FB1 !important;
+            opacity: 0.4;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -232,9 +232,24 @@ def load_css():
 
 
 # ============================================================
+# 🔀 التوجيه بين الصفحات
+# ============================================================
+def handle_routing(selected_page: str):
+    """ربط التنقل بين الصفحات عبر الشريط الجانبي"""
+    page_routes = {
+        "HOME": "app.py",
+        "المساعد الذكي": "pages/1_Chat.py",
+        "التحليلات": "pages/3_Analytics.py",
+    }
+    if selected_page in page_routes:
+        target_file = page_routes[selected_page]
+        if Path(target_file).exists():
+            st.switch_page(target_file)
+
+
+# ============================================================
 # 🛠️ الدوال المساعدة لقاعدة المعرفة
 # ============================================================
-
 def get_documents_stats():
     """إحصائيات إجمالية للمستندات والتصنيفات"""
     kb_path = settings.KNOWLEDGE_BASE_PATH
@@ -318,7 +333,7 @@ def preview_document_content(file_path: str) -> str:
         else:
             return "⚠️ معاينة النص المباشرة متاحة حالياً لملفات .txt و .docx فقط."
     except Exception as e:
-        return f"❌ تعذر فتح الملف للمعاينه: {str(e)}"
+        return f"❌ تعذر فتح الملف للمعاينة: {str(e)}"
 
 
 def rebuild_index():
@@ -346,23 +361,29 @@ def rebuild_index():
 # ============================================================
 # 🖥️ واجهة الصفحة الرئيسية
 # ============================================================
-
 def show():
     load_css()
 
-    # ✅ 1. تشغيل السايدبار الموحد
-    current_lang = render_sidebar(
+    # ✅ 1. تشغيل السايدبار الموحد والتنقل
+    st.session_state.current_page = "المستندات"
+    selected_page = render_sidebar(
         show_theme_toggle=True,
         show_stats=False,
         show_navigation=True
     )
+    
+    # التوجيه في حال اضغط المستخدم على صفحة أخرى من الشريط الجانبي
+    if selected_page != "المستندات":
+        handle_routing(selected_page)
+
+    current_lang = st.session_state.get("language", "ar")
     T = DOCS_TRANSLATIONS.get(current_lang, DOCS_TRANSLATIONS["ar"])
 
     # ✅ 2. الترويسة الرئيسية
     st.markdown(f"""
     <div class="doc-header">
-        <h2 style="color: #FFFFFF; font-weight: 800; margin: 0 0 6px 0;">{T['title']}</h2>
-        <p style="color: #FFFFFF; font-size: 0.88rem; margin: 0;">{T['subtitle']}</p>
+        <h2>{T['title']}</h2>
+        <p>{T['subtitle']}</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -379,7 +400,7 @@ def show():
         st.metric(T["stat_largest_cat"], max_cat)
     with c4:
         max_ext = max(stats["file_types"], key=stats["file_types"].get) if stats["file_types"] else "—"
-        st.metric(T["stat_top_type"], max_ext.upper())
+        st.metric(T["stat_top_type"], max_ext.replace(".", "").upper())
 
     st.markdown("---")
 
@@ -401,7 +422,7 @@ def show():
                 index=0
             )
 
-        if uploaded_file and st.button(T["upload_btn"], use_container_width=True, type="primary"):
+        if uploaded_file and st.button(T["upload_btn"], use_container_width=True):
             save_path = settings.KNOWLEDGE_BASE_PATH / category / uploaded_file.name
             save_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -432,7 +453,7 @@ def show():
     st.markdown("<br>", unsafe_allow_html=True)
 
     if documents:
-        st.caption(f"عدد النتائج: {len(documents)}")
+        st.caption(f"📊 عدد النتائج: {len(documents)}")
         for doc in documents:
             ext = Path(doc["filename"]).suffix.lower()
             icon = "📄" if ext == ".txt" else "📝" if ext == ".docx" else "📕" if ext == ".pdf" else "📎"
@@ -441,7 +462,7 @@ def show():
                 col_info, col_actions = st.columns([3, 2])
 
                 with col_info:
-                    st.markdown(f"**{icon} {doc['filename']}**")
+                    st.markdown(f"<span style='font-size: 1.1rem; font-weight: 700; color: #4A0E2E;'>{icon} {doc['filename']}</span>", unsafe_allow_html=True)
                     st.caption(f"📂 {doc['category']} | 📦 {doc['size'] / 1024:.1f} KB | 📅 {doc['modified'].strftime('%Y-%m-%d %H:%M')}")
 
                 with col_actions:
