@@ -62,15 +62,17 @@ def apply_dynamic_theme():
             [data-testid="stSidebar"] { background-color: #3D0F24 !important; border-right: 1px solid rgba(224, 33, 138, 0.25) !important; }
             [data-testid="stSidebar"] * { color: #F3C6DC !important; }
 
-            /* 2. الهيدر والبانر الرئيسي */
-            .hero-banner {
+            /* 2. الهيدر والبانر الرئيسي (hero-banner + chat-header + doc-header) */
+            .hero-banner, .chat-header, .doc-header {
                 background: linear-gradient(135deg, #4A0E2E 0%, #2B0715 100%) !important;
                 border: 1px solid rgba(224, 33, 138, 0.35) !important;
                 border-radius: 16px !important;
                 padding: 1.8rem !important;
                 margin-bottom: 1.5rem !important;
             }
-            .hero-banner h1, .hero-banner p { color: #FFFFFF !important; }
+            .hero-banner h1, .hero-banner p,
+            .chat-header h2, .chat-header p,
+            .doc-header h2, .doc-header p { color: #FFFFFF !important; }
 
             /* 3. بطاقات الإحصائيات (Metrics Cards) */
             .metric-card {
@@ -130,13 +132,15 @@ def apply_dynamic_theme():
             [data-testid="stSidebar"] { background-color: #FFFFFF !important; border-right: 1px solid #F8BBD0 !important; }
             [data-testid="stSidebar"] * { color: #4A0E2E !important; }
 
-            .hero-banner {
+            .hero-banner, .chat-header, .doc-header {
                 background: linear-gradient(135deg, #FCE4EC 0%, #F8BBD0 100%) !important;
                 border: 1px solid #E0218A !important;
                 border-radius: 16px !important;
                 padding: 1.8rem !important;
             }
-            .hero-banner h1, .hero-banner p { color: #4A0E2E !important; }
+            .hero-banner h1, .hero-banner p,
+            .chat-header h2, .chat-header p,
+            .doc-header h2, .doc-header p { color: #4A0E2E !important; }
 
             .metric-card {
                 background-color: #FFFFFF !important;
