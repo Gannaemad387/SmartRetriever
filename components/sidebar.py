@@ -1,3 +1,9 @@
+# components/sidebar.py
+"""
+🎨 المكون الموحد للقائمة الجانبية - Sidebar Component
+يدير الثيمات (Dark/Light)، اللغات (Ar/En)، والتنقل بين صفحات المنصة
+"""
+
 import streamlit as st
 from pathlib import Path
 
@@ -37,15 +43,33 @@ TRANSLATIONS = {
     }
 }
 
+
 # ============================================================
-# 🎨 تطبيق التنسيق الديناميكي للثيم (Dynamic Theme Injector)
+# 🎨 تطبيق التنسيق الديناميكي للثيم والاتجاه (RTL / LTR)
 # ============================================================
 def apply_dynamic_theme():
-    """تطبيق الثيم (فاتح/داكن) مع ضبط تباين الألوان لكافة العناصر والبطاقات"""
-    if st.session_state.get("dark_mode", True):
+    """تطبيق الثيم (فاتح/داكن) مع ضبط الاتجاه (RTL/LTR) وتباين الألوان لكافة العناصر"""
+    
+    is_dark = st.session_state.get("dark_mode", True)
+    lang = st.session_state.get("lang", "ar")
+    is_rtl = (lang == "ar")
+
+    # قاعدة اتجاه النص والواجهة
+    direction_css = """
+        .stApp, [data-testid="stSidebar"] {
+            direction: rtl !important;
+            text-align: right !important;
+        }
+    """ if is_rtl else """
+        .stApp, [data-testid="stSidebar"] {
+            direction: ltr !important;
+            text-align: left !important;
+        }
+    """
+
+    if is_dark:
         # 🌙 الوضع الداكن (Dark Mode)
-        st.markdown("""
-        <style>
+        theme_css = """
             /* خلفية التطبيق والسايدبار */
             .stApp { background-color: #0B0F19 !important; color: #F8FAFC !important; }
             [data-testid="stSidebar"] { background-color: #111827 !important; border-right: 1px solid rgba(255, 255, 255, 0.08) !important; }
@@ -88,12 +112,10 @@ def apply_dynamic_theme():
                 border-color: #38BDF8 !important;
                 color: #38BDF8 !important;
             }
-        </style>
-        """, unsafe_allow_html=True)
+        """
     else:
-        # ☀️ الوضع الفاتح (Light Mode - إبراز كافة النصوص والبطاقات)
-        st.markdown("""
-        <style>
+        # ☀️ الوضع الفاتح (Light Mode)
+        theme_css = """
             /* خلفية التطبيق والسايدبار */
             .stApp { background-color: #F8FAFC !important; color: #0F172A !important; }
             [data-testid="stSidebar"] { background-color: #FFFFFF !important; border-right: 1px solid #E2E8F0 !important; }
@@ -138,18 +160,21 @@ def apply_dynamic_theme():
                 color: #0284C7 !important;
             }
 
-            /* العناوين والنصوص الإضافية */
-            h1, h2, h3, h4, h5, h6, p, span, label, div {
-                color: #0F172A;
+            /* استهداف محدد ومريح للعناوين والنصوص */
+            .stMarkdown, .stMarkdown p, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4 {
+                color: #0F172A !important;
             }
-        </style>
-        """, unsafe_allow_html=True)
+        """
+
+    # دمج التنسيقات وحقنها
+    st.markdown(f"<style>{direction_css}\n{theme_css}</style>", unsafe_allow_html=True)
+
 
 # ============================================================
 # 🖥️ المكون الرئيسي للسايدبار (Render Sidebar)
 # ============================================================
 def render_sidebar(stats=None, show_theme_toggle=True, show_stats=True, show_navigation=True):
-    """عرض القائمة الجانبية الموحدة للتطبيق"""
+    """عرض القائمة الجانبية الموحدة للتطبيق وترجيع رمز اللغة الحالي"""
     
     # 1. تهيئة حالة الجلسة للثيم واللغة
     if "dark_mode" not in st.session_state:
@@ -157,7 +182,7 @@ def render_sidebar(stats=None, show_theme_toggle=True, show_stats=True, show_nav
     if "lang" not in st.session_state:
         st.session_state.lang = "ar"
 
-    # 2. تطبيق الثيم الديناميكي حسب الاختيار الحالي
+    # 2. تطبيق الثيم والاتجاه الديناميكي
     apply_dynamic_theme()
     
     # 3. جلب النصوص المترجمة
@@ -169,7 +194,7 @@ def render_sidebar(stats=None, show_theme_toggle=True, show_stats=True, show_nav
         st.markdown(f"""
         <div style="text-align: center; padding: 10px 0 15px 0;">
             <h2 style="margin: 0; font-weight: 800; font-size: 1.4rem;">🧠 SmartRetriever</h2>
-            <span style="font-size: 0.75rem; color: #94A3B8;">{T['brand_subtitle']}</span>
+            <span style="font-size: 0.75rem; opacity: 0.75;">{T['brand_subtitle']}</span>
         </div>
         """, unsafe_allow_html=True)
 
@@ -207,11 +232,11 @@ def render_sidebar(stats=None, show_theme_toggle=True, show_stats=True, show_nav
                 st.session_state.lang = "en" if st.session_state.lang == "ar" else "ar"
                 st.rerun()
 
-        # 🔗 روابط التواصل والتحقوق السفليّة
+        # 🔗 روابط التواصل والتوثيق السفليّة
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("""
         <div style="font-size: 0.75rem; text-align: center; opacity: 0.7;">
-            📦 AutoData · 2024-2026<br>
+            📦 SmartRetriever · 2026<br>
             <a href="https://github.com" target="_blank" style="color: #38BDF8; text-decoration: none;">GitHub</a> | 
             <a href="https://linkedin.com" target="_blank" style="color: #38BDF8; text-decoration: none;">LinkedIn</a>
         </div>
