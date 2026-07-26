@@ -2,6 +2,7 @@
 """
 🎨 المكون الموحد للقائمة الجانبية - Sidebar Component
 يدير الثيمات (Dark/Light)، اللغات (Ar/En)، وتنسيقات الهيكل العام
+💖 Barbie Color Palette
 """
 
 import streamlit as st
@@ -54,16 +55,17 @@ def apply_dynamic_theme():
     """
 
     if is_dark:
+        # 🌙 Dark Mode - Barbie (Deep Burgundy/Magenta base + Hot Pink accents)
         theme_css = """
             /* 1. خلفيات التطبيق والسايدبار */
-            .stApp { background-color: #0B0F19 !important; color: #F8FAFC !important; }
-            [data-testid="stSidebar"] { background-color: #111827 !important; border-right: 1px solid rgba(255, 255, 255, 0.08) !important; }
-            [data-testid="stSidebar"] * { color: #CBD5E1 !important; }
+            .stApp { background-color: #2B0715 !important; color: #FCE4EC !important; }
+            [data-testid="stSidebar"] { background-color: #3D0F24 !important; border-right: 1px solid rgba(224, 33, 138, 0.25) !important; }
+            [data-testid="stSidebar"] * { color: #F3C6DC !important; }
 
             /* 2. الهيدر والبانر الرئيسي */
             .hero-banner {
-                background: linear-gradient(135deg, #1E1B4B 0%, #0F172A 100%) !important;
-                border: 1px solid rgba(56, 189, 248, 0.25) !important;
+                background: linear-gradient(135deg, #4A0E2E 0%, #2B0715 100%) !important;
+                border: 1px solid rgba(224, 33, 138, 0.35) !important;
                 border-radius: 16px !important;
                 padding: 1.8rem !important;
                 margin-bottom: 1.5rem !important;
@@ -72,81 +74,110 @@ def apply_dynamic_theme():
 
             /* 3. بطاقات الإحصائيات (Metrics Cards) */
             .metric-card {
-                background: #1E293B !important;
-                border: 1px solid rgba(255, 255, 255, 0.08) !important;
+                background: #3D0F24 !important;
+                border: 1px solid rgba(224, 33, 138, 0.2) !important;
                 border-radius: 12px !important;
                 padding: 1rem !important;
                 text-align: center !important;
-                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2) !important;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.25) !important;
             }
-            .metric-value { color: #38BDF8 !important; font-size: 1.8rem !important; font-weight: 800 !important; }
-            .metric-label { color: #94A3B8 !important; font-size: 0.85rem !important; font-weight: 600 !important; }
+            .metric-value { color: #E0218A !important; font-size: 1.8rem !important; font-weight: 800 !important; }
+            .metric-label { color: #F3C6DC !important; font-size: 0.85rem !important; font-weight: 600 !important; }
 
             /* 4. إصلاح مشكلة الـ Expander الأبيض في الأسفل */
             div[data-testid="stExpander"] {
-                background-color: #111827 !important;
-                border: 1px solid rgba(255, 255, 255, 0.1) !important;
+                background-color: #3D0F24 !important;
+                border: 1px solid rgba(224, 33, 138, 0.25) !important;
                 border-radius: 12px !important;
             }
             div[data-testid="stExpander"] details {
-                background-color: #111827 !important;
-                color: #F8FAFC !important;
+                background-color: #3D0F24 !important;
+                color: #FCE4EC !important;
                 border-radius: 12px !important;
             }
             div[data-testid="stExpander"] summary {
-                background-color: #1E293B !important;
-                color: #F8FAFC !important;
+                background-color: #4A0E2E !important;
+                color: #FCE4EC !important;
                 border-radius: 12px !important;
             }
             div[data-testid="stExpander"] summary:hover {
-                color: #38BDF8 !important;
+                color: #E0218A !important;
             }
 
-            /* 5. الأزرار الموحدة (توحيد الأزرق/السماوي وتغطية الوردي) */
+            /* 5. الأزرار الموحدة (Barbie Pink بدل الأزرق) */
             .stButton > button[kind="primary"] {
-                background: linear-gradient(90deg, #0284C7 0%, #38BDF8 100%) !important;
+                background: linear-gradient(90deg, #C2185B 0%, #E0218A 100%) !important;
                 color: #FFFFFF !important;
                 border: none !important;
                 font-weight: 700 !important;
                 border-radius: 10px !important;
             }
             .stButton > button {
-                background-color: #1E293B !important;
-                color: #F8FAFC !important;
-                border: 1px solid rgba(255, 255, 255, 0.15) !important;
+                background-color: #4A0E2E !important;
+                color: #FCE4EC !important;
+                border: 1px solid rgba(224, 33, 138, 0.3) !important;
                 border-radius: 10px !important;
+            }
+            .stButton > button:hover {
+                border-color: #E0218A !important;
+                color: #E0218A !important;
             }
         """
     else:
+        # ☀️ Light Mode - Barbie الأصلي
         theme_css = """
-            .stApp { background-color: #F8FAFC !important; color: #0F172A !important; }
-            [data-testid="stSidebar"] { background-color: #FFFFFF !important; border-right: 1px solid #E2E8F0 !important; }
-            
+            .stApp { background-color: #FCE4EC !important; color: #4A0E2E !important; }
+            [data-testid="stSidebar"] { background-color: #FFFFFF !important; border-right: 1px solid #F8BBD0 !important; }
+            [data-testid="stSidebar"] * { color: #4A0E2E !important; }
+
             .hero-banner {
-                background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%) !important;
-                border: 1px solid #C7D2FE !important;
+                background: linear-gradient(135deg, #FCE4EC 0%, #F8BBD0 100%) !important;
+                border: 1px solid #E0218A !important;
                 border-radius: 16px !important;
                 padding: 1.8rem !important;
             }
+            .hero-banner h1, .hero-banner p { color: #4A0E2E !important; }
 
             .metric-card {
                 background-color: #FFFFFF !important;
-                border: 1px solid #E2E8F0 !important;
+                border: 1px solid #F8BBD0 !important;
                 border-radius: 12px !important;
                 padding: 1rem !important;
                 text-align: center !important;
+                box-shadow: 0 2px 8px rgba(194, 24, 91, 0.08) !important;
             }
-            .metric-value { color: #0284C7 !important; font-size: 1.8rem !important; font-weight: 800 !important; }
-            .metric-label { color: #64748B !important; font-size: 0.85rem !important; }
+            .metric-value { color: #E0218A !important; font-size: 1.8rem !important; font-weight: 800 !important; }
+            .metric-label { color: #C2185B !important; font-size: 0.85rem !important; }
 
             div[data-testid="stExpander"] {
                 background-color: #FFFFFF !important;
-                border: 1px solid #E2E8F0 !important;
+                border: 1px solid #F8BBD0 !important;
                 border-radius: 12px !important;
             }
             div[data-testid="stExpander"] summary {
-                background-color: #F1F5F9 !important;
-                color: #0F172A !important;
+                background-color: #FCE4EC !important;
+                color: #4A0E2E !important;
+            }
+            div[data-testid="stExpander"] summary:hover {
+                color: #E0218A !important;
+            }
+
+            .stButton > button[kind="primary"] {
+                background: linear-gradient(90deg, #C2185B 0%, #E0218A 100%) !important;
+                color: #FFFFFF !important;
+                border: none !important;
+                font-weight: 700 !important;
+                border-radius: 10px !important;
+            }
+            .stButton > button {
+                background-color: #FFFFFF !important;
+                color: #4A0E2E !important;
+                border: 1px solid #F8BBD0 !important;
+                border-radius: 10px !important;
+            }
+            .stButton > button:hover {
+                border-color: #E0218A !important;
+                color: #E0218A !important;
             }
         """
 
@@ -172,7 +203,7 @@ def render_sidebar(stats=None, show_theme_toggle=True, show_stats=True, show_nav
     with st.sidebar:
         st.markdown(f"""
         <div style="text-align: center; padding: 10px 0;">
-            <h2 style="margin: 0; font-weight: 800; font-size: 1.4rem; color: #38BDF8;">🧠 SmartRetriever</h2>
+            <h2 style="margin: 0; font-weight: 800; font-size: 1.4rem; color: #E0218A;">💖 SmartRetriever</h2>
             <span style="font-size: 0.75rem; opacity: 0.75;">{T['brand_subtitle']}</span>
         </div>
         """, unsafe_allow_html=True)
