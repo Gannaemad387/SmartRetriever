@@ -62,6 +62,14 @@ def apply_dynamic_theme():
             [data-testid="stSidebar"] { background-color: #3D0F24 !important; border-right: 1px solid rgba(224, 33, 138, 0.25) !important; }
             [data-testid="stSidebar"] * { color: #F3C6DC !important; }
 
+            /* 1.b تأكيد إضافي على نصوص الـ Caption في السايدبار
+               (لبعض عناصر Streamlit الداخلية قد يكون لها specificity أعلى
+               من القاعدة العامة [data-testid="stSidebar"] * أعلاه) */
+            [data-testid="stSidebar"] [data-testid="stCaptionContainer"],
+            [data-testid="stSidebar"] [data-testid="stCaptionContainer"] * {
+                color: #F3C6DC !important;
+            }
+
             /* 2. الهيدر والبانر الرئيسي (hero-banner + chat-header + doc-header) */
             .hero-banner, .chat-header, .doc-header {
                 background: linear-gradient(135deg, #4A0E2E 0%, #2B0715 100%) !important;
@@ -74,7 +82,7 @@ def apply_dynamic_theme():
             .chat-header h2, .chat-header p,
             .doc-header h2, .doc-header p { color: #FFFFFF !important; }
 
-            /* 3. بطاقات الإحصائيات (Metrics Cards) */
+            /* 3. بطاقات الإحصائيات المخصصة (HTML - metric-card) */
             .metric-card {
                 background: #3D0F24 !important;
                 border: 1px solid rgba(224, 33, 138, 0.2) !important;
@@ -85,6 +93,25 @@ def apply_dynamic_theme():
             }
             .metric-value { color: #E0218A !important; font-size: 1.8rem !important; font-weight: 800 !important; }
             .metric-label { color: #F3C6DC !important; font-size: 0.85rem !important; font-weight: 600 !important; }
+
+            /* 3.b مقاييس Streamlit الأصلية (st.metric) في محتوى الصفحة
+               ملحوظة: النسخ الحديثة من Streamlit بتستخدم data-testid بدل
+               الكلاسات القديمة (.stMetric)، فبنستهدفها هنا مباشرة عشان
+               تاخد ألوان واضحة في الـ Dark Mode بدل اللون الافتراضي الغامق */
+            [data-testid="stMetric"] {
+                background: #3D0F24 !important;
+                border: 1px solid rgba(224, 33, 138, 0.2) !important;
+                border-radius: 12px !important;
+                padding: 1rem !important;
+            }
+            [data-testid="stMetricLabel"],
+            [data-testid="stMetricLabel"] p {
+                color: #F3C6DC !important;
+            }
+            [data-testid="stMetricValue"],
+            [data-testid="stMetricValue"] div {
+                color: #FFFFFF !important;
+            }
 
             /* 4. إصلاح مشكلة الـ Expander الأبيض في الأسفل */
             div[data-testid="stExpander"] {
@@ -132,6 +159,11 @@ def apply_dynamic_theme():
             [data-testid="stSidebar"] { background-color: #FFFFFF !important; border-right: 1px solid #F8BBD0 !important; }
             [data-testid="stSidebar"] * { color: #4A0E2E !important; }
 
+            [data-testid="stSidebar"] [data-testid="stCaptionContainer"],
+            [data-testid="stSidebar"] [data-testid="stCaptionContainer"] * {
+                color: #4A0E2E !important;
+            }
+
             .hero-banner, .chat-header, .doc-header {
                 background: linear-gradient(135deg, #FCE4EC 0%, #F8BBD0 100%) !important;
                 border: 1px solid #E0218A !important;
@@ -152,6 +184,21 @@ def apply_dynamic_theme():
             }
             .metric-value { color: #E0218A !important; font-size: 1.8rem !important; font-weight: 800 !important; }
             .metric-label { color: #C2185B !important; font-size: 0.85rem !important; }
+
+            [data-testid="stMetric"] {
+                background-color: #FFFFFF !important;
+                border: 1px solid #F8BBD0 !important;
+                border-radius: 12px !important;
+                padding: 1rem !important;
+            }
+            [data-testid="stMetricLabel"],
+            [data-testid="stMetricLabel"] p {
+                color: #C2185B !important;
+            }
+            [data-testid="stMetricValue"],
+            [data-testid="stMetricValue"] div {
+                color: #4A0E2E !important;
+            }
 
             div[data-testid="stExpander"] {
                 background-color: #FFFFFF !important;
