@@ -77,10 +77,6 @@
 }
 
 /* رسالة المستخدم */
-/* ملحوظة: السيلكتور القديم [data-testid="stChatMessage"][data-testid="user"]
-   كان غير صالح تقنيًا (نفس الـ attribute مينفعش يكون له قيمتين في نفس الوقت)،
-   فالقاعدة دي كانت أصلاً مش بتتفعّل أبدًا وكانت السبب في مشكلة عدم وضوح
-   الألوان في الـ Dark Mode. استخدمنا :has() لاستهداف الفقاعة عن طريق الـ Avatar. */
 [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
     background: linear-gradient(135deg, #E0218A, #C2185B) !important;
     color: white !important;
@@ -103,7 +99,7 @@
     color: #FCE4EC !important;
 }
 
-/* مدخل النص */
+/* مدخل النص - الحاوية */
 [data-testid="stChatInput"] {
     border-radius: 12px !important;
     border: 2px solid #5C1938 !important;
@@ -111,11 +107,24 @@
     color: #FCE4EC !important;
 }
 
-[data-testid="stChatInput"]:focus {
+[data-testid="stChatInput"]:focus-within {
     border-color: #E0218A !important;
     box-shadow: 0 0 0 3px rgba(224, 33, 138, 0.2) !important;
 }
 
+/* ✅ إصلاح لون النص - textarea (الصح لـ st.chat_input) */
+[data-testid="stChatInput"] textarea {
+    color: #FCE4EC !important;
+    background: transparent !important;
+    caret-color: #E0218A !important;
+}
+
+[data-testid="stChatInput"] textarea::placeholder {
+    color: #C48098 !important;
+    opacity: 1 !important;
+}
+
+/* input عادي احتياطي */
 [data-testid="stChatInput"] input {
     color: #FCE4EC !important;
 }
@@ -155,7 +164,6 @@
     background: #5C1938 !important;
 }
 
-/* أزرار الحذف - لون خطر دلالي، سبته زي ما هو */
 .stButton button[kind="danger"] {
     background: #dc2626 !important;
     color: white !important;
@@ -252,12 +260,11 @@
 }
 
 .stMetric .stMetricDelta {
-    color: #10b981 !important; /* دلالي (زيادة/نقصان) - سبته أخضر */
+    color: #10b981 !important;
 }
 
 /* ============================================================
    9. تنسيق الأخطاء والتنبيهات
-   (ألوان دلالية عالمية - سبتها زي ما هي عشان الوضوح: أحمر=خطأ، أخضر=نجاح، أصفر=تحذير)
    ============================================================ */
 
 [data-testid="stException"] {
@@ -281,7 +288,6 @@
     color: #fcd34d !important;
 }
 
-/* رسائل المعلومات - دي مرتبطة باللون الأساسي القديم، بدلناها لـ Barbie Pink */
 [data-testid="stInfo"] {
     background: #4A0E2E !important;
     border: 1px solid #E0218A !important;
@@ -452,7 +458,7 @@ hr {
 }
 
 .source-card .source-score {
-    color: #10b981; /* دلالي - نسبة تطابق/جودة، سبته أخضر */
+    color: #10b981;
     font-size: 0.9rem;
 }
 
@@ -486,13 +492,10 @@ hr {
 
 /* ============================================================
    19. ملحوظة: الألوان العامة (.stApp / .stMarkdown / الخلفية)
-   اتشالت من هنا بالكامل - كانت بتفرض ألوان ثابتة (!important)
-   بتتعارض مع الثيم الديناميكي في sidebar.py وبتخلي النص يختفي
-   في أحد الوضعين. sidebar.py هو المصدر الوحيد الآن للتحكم في
-   ألوان .stApp والنصوص العامة حسب الوضع الفاتح/الداكن.
+   اتشالت من هنا - sidebar.py هو المصدر الوحيد للتحكم فيها.
    ============================================================ */
 
-/* الروابط - لون ثابت مناسب في الوضعين (وردي غامق واضح على أبيض وعلى برجندي غامق) */
+/* الروابط */
 a {
     color: #E0218A !important;
     text-decoration: none !important;
