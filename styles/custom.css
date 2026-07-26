@@ -1,5 +1,5 @@
 /* app/styles/custom.css */
-/* 🎨 تنسيقات مخصصة لتطبيق ProcureMind-AI */
+/* 🎨 تنسيقات مخصصة لتطبيق SmartRetriever - Barbie Edition */
 
 /* ============================================================
    1. تنسيقات عامة
@@ -19,54 +19,66 @@
     margin: 0 auto;
 }
 
+/* 🎨 Barbie Colors */
+:root {
+    --bg-primary: #FCE4EC;
+    --bg-secondary: #FFFFFF;
+    --primary: #E0218A;
+    --primary-dark: #C2185B;
+    --text-primary: #4A0E2E;
+    --text-secondary: #C2185B;
+    --shadow: rgba(224, 33, 138, 0.2);
+    --border-color: #E0218A;
+}
+
 /* ============================================================
    2. تنسيق القائمة الجانبية (Sidebar)
    ============================================================ */
 
 /* خلفية القائمة الجانبية */
 [data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
-    border-right: 1px solid #334155;
+    background: #FFFFFF !important;
+    border-right: 2px solid #E0218A !important;
 }
 
 [data-testid="stSidebar"] .stMarkdown {
-    color: #e2e8f0;
+    color: #4A0E2E !important;
 }
 
 [data-testid="stSidebar"] h1,
 [data-testid="stSidebar"] h2,
 [data-testid="stSidebar"] h3 {
-    color: #f8fafc !important;
+    color: #E0218A !important;
 }
 
 [data-testid="stSidebar"] .stButton button {
-    background: linear-gradient(135deg, #2563eb, #7c3aed);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 0.5rem 1rem;
-    font-weight: 600;
-    transition: all 0.3s ease;
+    background: linear-gradient(135deg, #E0218A, #C2185B) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 0.5rem 1rem !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
 }
 
 [data-testid="stSidebar"] .stButton button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 15px rgba(224, 33, 138, 0.4) !important;
 }
 
 [data-testid="stSidebar"] .stMetric {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 10px;
-    padding: 0.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: #FCE4EC !important;
+    border-radius: 10px !important;
+    padding: 0.5rem !important;
+    border: 1px solid #E0218A !important;
 }
 
 [data-testid="stSidebar"] .stMetric label {
-    color: #94a3b8 !important;
+    color: #4A0E2E !important;
 }
 
 [data-testid="stSidebar"] .stMetric .stMetricValue {
-    color: #f8fafc !important;
+    color: #E0218A !important;
 }
 
 /* ============================================================
@@ -82,38 +94,38 @@
 
 /* رسالة المستخدم */
 [data-testid="stChatMessage"][data-testid="user"] {
-    background: linear-gradient(135deg, #2563eb, #7c3aed) !important;
+    background: linear-gradient(135deg, #E0218A, #C2185B) !important;
     color: white !important;
     border-bottom-right-radius: 4px !important;
 }
 
 /* رسالة المساعد */
 [data-testid="stChatMessage"][data-testid="assistant"] {
-    background: #1e293b !important;
-    color: #e2e8f0 !important;
+    background: #FFFFFF !important;
+    color: #4A0E2E !important;
     border-bottom-left-radius: 4px !important;
-    border: 1px solid #334155 !important;
+    border: 2px solid #E0218A !important;
 }
 
 /* مدخل النص */
 [data-testid="stChatInput"] {
     border-radius: 12px !important;
-    border: 2px solid #334155 !important;
-    background: #0f172a !important;
-    color: #e2e8f0 !important;
+    border: 2px solid #E0218A !important;
+    background: #FFFFFF !important;
+    color: #4A0E2E !important;
 }
 
 [data-testid="stChatInput"]:focus {
-    border-color: #2563eb !important;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
+    border-color: #C2185B !important;
+    box-shadow: 0 0 0 3px rgba(224, 33, 138, 0.2) !important;
 }
 
 [data-testid="stChatInput"] input {
-    color: #e2e8f0 !important;
+    color: #4A0E2E !important;
 }
 
 [data-testid="stChatInput"] input::placeholder {
-    color: #64748b !important;
+    color: #C2185B !important;
 }
 
 /* ============================================================
@@ -128,24 +140,25 @@
 }
 
 .stButton button[kind="primary"] {
-    background: linear-gradient(135deg, #2563eb, #7c3aed) !important;
+    background: linear-gradient(135deg, #E0218A, #C2185B) !important;
     color: white !important;
     border: none !important;
+    box-shadow: 0 4px 15px rgba(224, 33, 138, 0.3) !important;
 }
 
 .stButton button[kind="primary"]:hover {
     transform: translateY(-2px) !important;
-    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4) !important;
+    box-shadow: 0 8px 30px rgba(224, 33, 138, 0.4) !important;
 }
 
 .stButton button[kind="secondary"] {
-    background: #1e293b !important;
-    color: #e2e8f0 !important;
-    border: 1px solid #334155 !important;
+    background: #FFFFFF !important;
+    color: #4A0E2E !important;
+    border: 2px solid #E0218A !important;
 }
 
 .stButton button[kind="secondary"]:hover {
-    background: #334155 !important;
+    background: #FCE4EC !important;
 }
 
 /* أزرار الحذف */
@@ -164,18 +177,19 @@
    ============================================================ */
 
 [data-testid="stExpander"] {
-    background: #0f172a !important;
-    border: 1px solid #334155 !important;
+    background: #FFFFFF !important;
+    border: 2px solid #E0218A !important;
     border-radius: 10px !important;
+    box-shadow: 0 2px 10px rgba(224, 33, 138, 0.08) !important;
 }
 
 [data-testid="stExpander"] summary {
-    color: #e2e8f0 !important;
+    color: #4A0E2E !important;
     font-weight: 600 !important;
 }
 
 [data-testid="stExpander"] summary:hover {
-    color: #2563eb !important;
+    color: #E0218A !important;
 }
 
 /* ============================================================
@@ -183,25 +197,25 @@
    ============================================================ */
 
 [data-testid="stTable"] {
-    background: #0f172a !important;
+    background: #FFFFFF !important;
     border-radius: 10px !important;
-    border: 1px solid #334155 !important;
+    border: 2px solid #E0218A !important;
 }
 
 [data-testid="stTable"] thead th {
-    background: #1e293b !important;
-    color: #94a3b8 !important;
+    background: #E0218A !important;
+    color: #FFFFFF !important;
     font-weight: 600 !important;
-    border-bottom: 2px solid #334155 !important;
+    border-bottom: 2px solid #C2185B !important;
 }
 
 [data-testid="stTable"] tbody td {
-    color: #e2e8f0 !important;
-    border-bottom: 1px solid #1e293b !important;
+    color: #4A0E2E !important;
+    border-bottom: 1px solid #FCE4EC !important;
 }
 
 [data-testid="stTable"] tbody tr:hover {
-    background: #1e293b !important;
+    background: #FCE4EC !important;
 }
 
 /* ============================================================
@@ -217,12 +231,12 @@
 }
 
 .js-plotly-plot .plotly .gridlayer path {
-    stroke: #334155 !important;
+    stroke: rgba(224, 33, 138, 0.2) !important;
 }
 
 .js-plotly-plot .plotly .xtick text,
 .js-plotly-plot .plotly .ytick text {
-    fill: #94a3b8 !important;
+    fill: #4A0E2E !important;
 }
 
 /* ============================================================
@@ -231,18 +245,19 @@
 
 /* بطاقات المعلومات */
 .stMetric {
-    background: #0f172a !important;
+    background: #FFFFFF !important;
     border-radius: 12px !important;
     padding: 1rem !important;
-    border: 1px solid #334155 !important;
+    border: 2px solid #E0218A !important;
+    box-shadow: 0 2px 10px rgba(224, 33, 138, 0.08) !important;
 }
 
 .stMetric label {
-    color: #94a3b8 !important;
+    color: #4A0E2E !important;
 }
 
 .stMetric .stMetricValue {
-    color: #f8fafc !important;
+    color: #E0218A !important;
 }
 
 .stMetric .stMetricDelta {
@@ -255,34 +270,34 @@
 
 /* رسائل الخطأ */
 [data-testid="stException"] {
-    background: #7f1d1d !important;
-    border: 1px solid #dc2626 !important;
+    background: #FCE4EC !important;
+    border: 2px solid #C2185B !important;
     border-radius: 10px !important;
-    color: #fca5a5 !important;
+    color: #4A0E2E !important;
 }
 
 /* رسائل النجاح */
 [data-testid="stSuccess"] {
-    background: #064e3b !important;
-    border: 1px solid #10b981 !important;
+    background: #F0FDF4 !important;
+    border: 2px solid #22C55E !important;
     border-radius: 10px !important;
-    color: #6ee7b7 !important;
+    color: #166534 !important;
 }
 
 /* رسائل التحذير */
 [data-testid="stWarning"] {
-    background: #451a03 !important;
-    border: 1px solid #f59e0b !important;
+    background: #FEF3C7 !important;
+    border: 2px solid #F59E0B !important;
     border-radius: 10px !important;
-    color: #fcd34d !important;
+    color: #92400E !important;
 }
 
 /* رسائل المعلومات */
 [data-testid="stInfo"] {
-    background: #172554 !important;
-    border: 1px solid #2563eb !important;
+    background: #FCE4EC !important;
+    border: 2px solid #E0218A !important;
     border-radius: 10px !important;
-    color: #93c5fd !important;
+    color: #4A0E2E !important;
 }
 
 /* ============================================================
@@ -293,7 +308,7 @@
 hr {
     border: none !important;
     height: 2px !important;
-    background: linear-gradient(90deg, transparent, #2563eb, #7c3aed, transparent) !important;
+    background: linear-gradient(90deg, transparent, #E0218A, #C2185B, transparent) !important;
     margin: 2rem 0 !important;
 }
 
@@ -303,22 +318,23 @@ hr {
 
 /* رأس الصفحة */
 .page-header {
-    background: linear-gradient(135deg, #0f172a, #1e293b);
-    padding: 1.5rem;
-    border-radius: 12px;
-    border: 1px solid #334155;
-    margin-bottom: 2rem;
+    background: linear-gradient(135deg, #FCE4EC, #E0218A) !important;
+    padding: 1.5rem !important;
+    border-radius: 12px !important;
+    border: 2px solid #C2185B !important;
+    margin-bottom: 2rem !important;
+    box-shadow: 0 4px 20px rgba(224, 33, 138, 0.2) !important;
 }
 
 .page-header h1 {
-    color: #f8fafc;
-    font-size: 2rem;
-    font-weight: 800;
+    color: #FFFFFF !important;
+    font-size: 2rem !important;
+    font-weight: 800 !important;
 }
 
 .page-header p {
-    color: #94a3b8;
-    font-size: 1.1rem;
+    color: #FFFFFF !important;
+    font-size: 1.1rem !important;
 }
 
 /* ============================================================
@@ -326,13 +342,13 @@ hr {
    ============================================================ */
 
 [data-testid="stProgress"] {
-    background: #1e293b !important;
+    background: #FCE4EC !important;
     border-radius: 10px !important;
     overflow: hidden !important;
 }
 
 [data-testid="stProgress"] > div {
-    background: linear-gradient(90deg, #2563eb, #7c3aed) !important;
+    background: linear-gradient(90deg, #E0218A, #C2185B) !important;
     border-radius: 10px !important;
 }
 
@@ -341,25 +357,26 @@ hr {
    ============================================================ */
 
 [data-testid="stTabs"] {
-    background: #0f172a !important;
+    background: #FFFFFF !important;
     border-radius: 10px !important;
     padding: 0.5rem !important;
+    border: 2px solid #E0218A !important;
 }
 
 [data-testid="stTabs"] button {
-    color: #94a3b8 !important;
+    color: #4A0E2E !important;
     border-radius: 8px !important;
     transition: all 0.3s ease !important;
 }
 
 [data-testid="stTabs"] button[aria-selected="true"] {
-    background: #2563eb !important;
+    background: linear-gradient(135deg, #E0218A, #C2185B) !important;
     color: white !important;
 }
 
 [data-testid="stTabs"] button:hover {
-    background: #1e293b !important;
-    color: #e2e8f0 !important;
+    background: #FCE4EC !important;
+    color: #E0218A !important;
 }
 
 /* ============================================================
@@ -367,14 +384,15 @@ hr {
    ============================================================ */
 
 [data-testid="stFileUploader"] {
-    background: #0f172a !important;
-    border: 2px dashed #334155 !important;
+    background: #FFFFFF !important;
+    border: 2px dashed #E0218A !important;
     border-radius: 12px !important;
     padding: 2rem !important;
 }
 
 [data-testid="stFileUploader"]:hover {
-    border-color: #2563eb !important;
+    border-color: #C2185B !important;
+    background: #FCE4EC !important;
 }
 
 /* ============================================================
@@ -416,13 +434,13 @@ hr {
 .centered h1 {
     font-size: 3rem;
     font-weight: 800;
-    background: linear-gradient(135deg, #2563eb, #7c3aed);
+    background: linear-gradient(135deg, #E0218A, #C2185B);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
 .centered p {
-    color: #94a3b8;
+    color: #4A0E2E !important;
     font-size: 1.2rem;
     margin-top: 1rem;
 }
@@ -432,33 +450,34 @@ hr {
    ============================================================ */
 
 .source-card {
-    background: #1e293b;
-    border: 1px solid #334155;
-    border-radius: 8px;
-    padding: 0.75rem;
-    margin: 0.5rem 0;
-    transition: all 0.3s ease;
+    background: #FFFFFF !important;
+    border: 2px solid #E0218A !important;
+    border-radius: 8px !important;
+    padding: 0.75rem !important;
+    margin: 0.5rem 0 !important;
+    transition: all 0.3s ease !important;
 }
 
 .source-card:hover {
-    border-color: #2563eb;
-    transform: translateX(5px);
+    border-color: #C2185B !important;
+    transform: translateX(5px) !important;
+    box-shadow: 0 4px 15px rgba(224, 33, 138, 0.15) !important;
 }
 
 .source-card .source-name {
-    color: #e2e8f0;
-    font-weight: 600;
+    color: #4A0E2E !important;
+    font-weight: 600 !important;
 }
 
 .source-card .source-score {
-    color: #10b981;
-    font-size: 0.9rem;
+    color: #E0218A !important;
+    font-size: 0.9rem !important;
 }
 
 .source-card .source-preview {
-    color: #94a3b8;
-    font-size: 0.85rem;
-    margin-top: 0.25rem;
+    color: #C2185B !important;
+    font-size: 0.85rem !important;
+    margin-top: 0.25rem !important;
 }
 
 /* ============================================================
@@ -466,44 +485,67 @@ hr {
    ============================================================ */
 
 .suggested-question {
-    background: #0f172a;
-    border: 1px solid #334155;
-    border-radius: 20px;
-    padding: 0.5rem 1rem;
-    margin: 0.25rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    color: #94a3b8;
+    background: #FFFFFF !important;
+    border: 2px solid #E0218A !important;
+    border-radius: 20px !important;
+    padding: 0.5rem 1rem !important;
+    margin: 0.25rem !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    color: #4A0E2E !important;
 }
 
 .suggested-question:hover {
-    background: #2563eb;
-    color: white;
-    border-color: #2563eb;
-    transform: scale(1.02);
+    background: linear-gradient(135deg, #E0218A, #C2185B) !important;
+    color: white !important;
+    border-color: #C2185B !important;
+    transform: scale(1.02) !important;
 }
 
 /* ============================================================
-   19. تنسيقات الوضع الداكن (افتراضي)
+   19. تنسيقات الخلفية العامة
    ============================================================ */
 
 /* الخلفية العامة */
 .stApp {
-    background: #0f172a !important;
+    background: #FCE4EC !important;
 }
 
 /* النصوص العامة */
 .stMarkdown, .stText {
-    color: #e2e8f0 !important;
+    color: #4A0E2E !important;
 }
 
 /* الروابط */
 a {
-    color: #2563eb !important;
+    color: #E0218A !important;
     text-decoration: none !important;
 }
 
 a:hover {
-    color: #7c3aed !important;
+    color: #C2185B !important;
     text-decoration: underline !important;
+}
+
+/* ============================================================
+   20. تنسيق DataFrames
+   ============================================================ */
+
+.stDataFrame {
+    border: 2px solid #E0218A !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+}
+
+.stDataFrame thead {
+    background: #E0218A !important;
+    color: #FFFFFF !important;
+}
+
+.stDataFrame tbody {
+    color: #4A0E2E !important;
+}
+
+.stDataFrame tbody tr:hover {
+    background: #FCE4EC !important;
 }
