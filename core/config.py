@@ -1,5 +1,5 @@
 """
-🌾 إعدادات تطبيق SmartAgri - Application Configuration
+⚙️ إعدادات التطبيق - Application Configuration
 
 يقرأ الإعدادات من Streamlit Secrets (على الكلاود) أو من متغيرات البيئة (محليًا)
 بدون أي اعتماد على مكتبة dotenv
@@ -87,7 +87,7 @@ class Settings:
     # 🖥️ إعدادات التطبيق
     # ============================================================
 
-    APP_NAME: str = get_secret("APP_NAME", "SmartAgri")
+    APP_NAME: str = get_secret("APP_NAME", "SmartRetriever")
     APP_VERSION: str = get_secret("APP_VERSION", "1.0.0")
     ENVIRONMENT: str = get_secret("ENVIRONMENT", "production")
     DEBUG: bool = get_secret("DEBUG", "False").lower() == "true"
@@ -254,7 +254,7 @@ def validate_settings():
     elif settings.is_testing():
         print("🧪 تشغيل في بيئة اختبارية")
 
-    print(f"🌾 {settings.APP_NAME} v{settings.APP_VERSION}")
+    print(f"📦 {settings.APP_NAME} v{settings.APP_VERSION}")
 
 
 validate_settings()
